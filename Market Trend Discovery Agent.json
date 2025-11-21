@@ -1,0 +1,467 @@
+{
+  "name": "Market Trend Discovery Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -416,
+        0
+      ],
+      "id": "15fe333d-3e36-4ee2-a2f5-6253a58786f1",
+      "name": "When chat message received",
+      "webhookId": "aebcf68c-5967-4082-a1e8-ae41d61a12f6"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a user intent classification specialist.\n\nYour task: Determine if the user's input relates to rugs trends.\n\nClassification Rules:\nOutput {\"trend\": \"yes\"} if the user:\n• Mentions product trends, trending topics, or market trends\n• Shares URLs from e-commerce platforms (Amazon, Walmart) suggesting trending items\n• Asks about what's popular, trending, or gaining traction\nOutput {\"trend\": \"no\"} if the user:\n• Asks general questions unrelated to trends\n• Shares content without trend indicators\n\nResponse Format:\nReturn ONLY valid JSON with no additional text or explanation\nBase classification strictly on the provided input—do not infer beyond what's explicitly stated\nAnalyze both direct mentions and contextual signals (URLs, keywords, phrasing)"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        16,
+        0
+      ],
+      "id": "c9855546-388b-4f70-a8dd-dedd6f6d12df",
+      "name": "Find User Intent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        16,
+        208
+      ],
+      "id": "84cab4bc-21d6-4020-a8a6-5457eaeeeed9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "DhKy0QiFLp9ekU0J",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input example:\n// [\n//   {\n//     \"output\": \"```json\\n{\\n  \\\"trend\\\": \\\"no\\\",\\n  \\\"answer\\\": \\\"Hello! How can I help you today?\\\"\\n}\\n```\"\n//   },\n//   {\n//     \"output\": \"```json\\n{\\n  \\\"trend\\\": \\\"yes\\\"\\n}\\n```\"\n//   }\n// ]\n\nreturn items.map(item => {\n  let raw = item.json.output;\n\n  // Remove markdown formatting like ```json ... ```\n  raw = raw.replace(/```json|```/g, \"\").trim();\n\n  let parsed;\n  try {\n    parsed = JSON.parse(raw);\n  } catch (e) {\n    parsed = { trend: \"no\", answer: \"Parsing error\" };\n  }\n\n  return {\n    json: parsed\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        0
+      ],
+      "id": "2174a4c6-6411-4eb3-bb5e-65b5310f26da",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9017c454-c7bf-4a03-be20-3b9e1ed476ce",
+              "leftValue": "={{$json[\"trend\"]}}",
+              "rightValue": "yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        0
+      ],
+      "id": "b0889ba4-cb9a-4160-a206-8fb417c7843e",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        208
+      ],
+      "id": "ecfa297d-2af9-40bc-ae10-c00eed4c615a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        992,
+        528
+      ],
+      "id": "6bec242b-c050-45f0-8ff8-1b5b01731434",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        992,
+        704
+      ],
+      "id": "7a07ebd6-0dee-444b-aa0e-58f8195646f6",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "DhKy0QiFLp9ekU0J",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Simple AI Agent",
+        "height": 496,
+        "width": 368,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        416
+      ],
+      "typeVersion": 1,
+      "id": "944c440e-d59f-4064-9c79-02df41377397",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# User Intent Identifier\n\n**Returns \"yes\" if the user asks about rug trends.**\n\n**Returns \"no\" for simple questions and provide a response without scraping.**\n",
+        "height": 608,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -128,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "89346e89-18ef-4c55-a584-182d328aecec",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "url": "https://ruginsider.com/carpet-and-rug-news?format=feed&type=rss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -304
+      ],
+      "id": "6700bc7f-0810-406e-af25-2124c87b071e",
+      "name": "RSS Rug Insider"
+    },
+    {
+      "parameters": {
+        "url": "https://isberian.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -480
+      ],
+      "id": "e17af045-11a6-42af-a2dc-d8a10441d62a",
+      "name": "RSS Isberian"
+    },
+    {
+      "parameters": {
+        "url": "https://homedecorfinerugs.com/blogs/blog.atom",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -128
+      ],
+      "id": "18215178-a1b6-4e3c-8e6c-c11cc939fd6c",
+      "name": "RSS Home Decor"
+    },
+    {
+      "parameters": {
+        "url": "https://rugjoy.net/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        48
+      ],
+      "id": "a1fd8717-4b54-4238-8a77-9cb116a44f18",
+      "name": "RSS Rug Joy"
+    },
+    {
+      "parameters": {
+        "content": "# RSS Feed\nGet posts from different sources and filter them ",
+        "height": 848,
+        "width": 368,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        -592
+      ],
+      "typeVersion": 1,
+      "id": "2a8e73fb-7806-43e7-98b2-13e2e62eeefc",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1488,
+        -320
+      ],
+      "id": "fac6f38f-79f2-4818-ab1a-7c10ecbad156",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "title, link, pubDate, content, contentSnippet, isoDate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1664,
+        -288
+      ],
+      "id": "8def2efe-c958-4f25-b6ce-37837df16f1e",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nconst now = new Date();\nconst twoDaysAgo = new Date();\ntwoDaysAgo.setDate(now.getDate() - 7); // only include last 7 days\n\nfor (const item of $input.all()) {\n  const isoDate = new Date(item.json.isoDate);\n  if (isoDate >= twoDaysAgo && isoDate <= now) {\n    output.push(item);\n  }\n}\nreturn output;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        -288
+      ],
+      "id": "040f6515-4a73-48cf-b73a-135080ecfb6d",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Find User Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Find User Intent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find User Intent": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Find User Intent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "RSS Isberian",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Rug Insider",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Home Decor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Rug Joy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Isberian": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Rug Insider": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS Home Decor": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "RSS Rug Joy": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2d9720b5-01a5-4988-a321-d4bab26b3410",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8522ce57e87ca23188b8a771af1dd7504738df1877c2704a6af80acff4f46af6"
+  },
+  "id": "NRU4mMsK1Ix8zKCi",
+  "tags": []
+}
