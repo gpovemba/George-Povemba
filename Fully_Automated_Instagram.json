@@ -1,0 +1,454 @@
+{
+  "name": "Fully Automated Instagram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "17841474205211459",
+        "edge": "media_publish",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "creation_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2380,
+        -280
+      ],
+      "id": "4ac505bc-0f50-47f2-8ba4-dc41e9d3ce32",
+      "name": "Post to IG",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "napjcRoinQkb5oUQ",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        480,
+        -300
+      ],
+      "id": "67f173fa-d1a6-4abd-bf8d-7614a516d0c8",
+      "name": "Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7ZCh1YvXc3fkzRlH",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "You are skilled at analyzing an image and writing a short, engaging Instagram caption focused on healthy habits and lifestyle topics. Based on the image provided, craft a brief caption (1–3 sentences) that highlights its connection to one or more of the following themes: seed oils, gut health, hydration, sleep and stress, microplastics, or skin clarity. Make the caption straightforward, relatable, and easy to understand, helping viewers connect the image to a healthy lifestyle choice or insight. Avoid technical jargon or overexplaining. Do not use emojis, hashtags, or quotes. Keep the tone authentic, motivating, and aligned with a health-conscious audience.",
+        "imageUrls": "={{ $('Upload to Drive').item.json.webContentLink }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1020,
+        -100
+      ],
+      "id": "3641114f-fb91-45ec-8384-1ee5c69cade9",
+      "name": "OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "sziSj9QsHmf3Y7G1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "17841474205211459",
+        "edge": "media",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "image_url",
+                "value": "={{ $json.Location }}"
+              },
+              {
+                "name": "caption",
+                "value": "={{ $('Merge').item.json.content }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        -280
+      ],
+      "id": "85318dff-639e-4306-bee3-f2a5881bfa4b",
+      "name": "Create container",
+      "alwaysOutputData": false,
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "napjcRoinQkb5oUQ",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2140,
+        -280
+      ],
+      "id": "784f08d8-d2cb-49c6-9eac-2e79b5f7fe8a",
+      "name": "Wait",
+      "webhookId": "d9b19ba6-1f26-40c5-8c70-7afcb5a491f1"
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Google Drive').item.json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/folders/1zInptrti0FW-MW3_1tGKoY7m4CX4zgSl",
+          "mode": "url"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        740,
+        -100
+      ],
+      "id": "227217eb-d833-4e2a-9cdb-1669bb42b7b5",
+      "name": "Google Drive1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7ZCh1YvXc3fkzRlH",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1280,
+        -280
+      ],
+      "id": "4c8089c1-1103-4972-affa-9a5fd2107c28",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64192f96-e37c-4fc9-8f1e-2386c8b2496d",
+              "name": "=topic",
+              "value": "={{ ['Seed Oils', 'Gut Health', 'Hydration', 'Sleep & Stress', 'Microplastics', 'Skin Clarity'][Math.floor(Math.random() * 6)] }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -460,
+        -300
+      ],
+      "id": "513f1160-026a-4400-bf50-2ed89046371e",
+      "name": "Pick Topic"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "=(() => {\n  const topic = $node[\"Pick Topic\"].json.topic.trim();\n  const prompts = {\n    \"Seed Oils\":        \"Generate an image showing a wooden table with clear glass bottles labeled as sunflower oil, canola oil, and soybean oil, surrounded by whole seeds. The mood should subtly highlight the caution around processed seed oils, using muted, earthy tones and natural lighting.\",\n    \"Gut Health\":       \"Create an image of a bowl filled with colorful fermented foods like sauerkraut, kimchi, kefir, and yogurt on a rustic table. Include small jars of probiotics and fresh herbs in the background. Use soft daylight and focus on the texture of the foods.\",\n    \"Hydration\":        \"Show a close-up of a clear glass of water with condensation on the outside, set next to slices of lemon, cucumber, and mint leaves on a white marble countertop. Include sunlight or window light to give a refreshing, clean mood.\",\n    \"Sleep & Stress\":   \"Generate an image of a cozy bedroom corner with soft blankets, a warm cup of herbal tea, an open book, and a lavender-scented candle. Keep the lighting warm and soft, evoking relaxation and calm.\",\n    \"Microplastics\":    \"Create an image of small plastic fragments scattered among grains of sea salt or inside a clear glass of water, with a human hand holding it hesitantly. Use cool-toned lighting to emphasize the hidden threat of microplastics in daily life.\",\n    \"Skin Clarity\":     \"Show a minimalistic bathroom countertop with a clean white towel, a jade roller, and natural skincare products (like facial oils, serums, or masks) arranged neatly. Use bright, natural light to highlight freshness and clarity.\"\n  };\n  return prompts[topic] || `A beautiful, minimal-style wellness graphic illustrating ${topic}.`;\n})()\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -220,
+        -300
+      ],
+      "id": "db61e8d7-bb6b-440c-bf1d-fe6b2684498b",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "sziSj9QsHmf3Y7G1",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{$node[\"Pick Topic\"].json.topic.trim()}}.png  ",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1BuoNyf-uPaxF5R9nvopOgG5QhkfW96Rb",
+          "mode": "list",
+          "cachedResultName": "images",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1BuoNyf-uPaxF5R9nvopOgG5QhkfW96Rb"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        240,
+        -300
+      ],
+      "id": "3d56a1de-6d1f-4d95-b6a4-e436eac03461",
+      "name": "Upload to Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7ZCh1YvXc3fkzRlH",
+          "name": "Google Drive account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 3
+            },
+            {
+              "triggerAtHour": 11
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -700,
+        -300
+      ],
+      "id": "62584fd7-fbdf-467b-bc17-495ef2815f5b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "foodclarityuploads",
+        "fileName": "=`images/${Date.now()}.jpg`\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        1620,
+        -280
+      ],
+      "id": "9ad8846a-a31c-4c53-a1a7-17577f8ea9cf",
+      "name": "AWS S3",
+      "credentials": {
+        "aws": {
+          "id": "4yIdOCppdorduTk0",
+          "name": "AWS account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create container": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Post to IG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "OpenAI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "AWS S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Topic": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Upload to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Pick Topic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Drive": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS S3": {
+      "main": [
+        [
+          {
+            "node": "Create container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bab2e466-a7d9-4918-ad27-5168b0f6bd0d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f16e0a0c7f4ff2ee0ffcfe4139bd9c782aa72a9b90a7ef7ab4e20c0e1f2e55d"
+  },
+  "id": "vyIsLRif8CqfSI5P",
+  "tags": []
+}

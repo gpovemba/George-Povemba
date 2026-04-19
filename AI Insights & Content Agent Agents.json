@@ -1,0 +1,1408 @@
+{
+  "name": "AI Insights & Content Agent Agents",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        704
+      ],
+      "id": "cc92216c-1885-4409-9c95-b224beb31a07",
+      "name": "When chat message received",
+      "webhookId": "d7af318f-b820-4e4d-bced-8b998949494c"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.allData }}",
+        "options": {
+          "systemMessage": "=You are an AI marketing insights assistant. \n\n## Task:\nAnalyze multiple signals from different sources (trend, competitor, style) and generate **concise outputs** for each signal type.\n\n- Input will be a JSON list of signals with `type`, `source`, and `content`.\n- Output must be structured as JSON, grouped by signal type.\n- Keep each signal **short and actionable**.\n\n## Output Format:\n```json\n{\n  \"trend_signal\": \"Eco-friendly jute rugs trending in Amazon Top 100.\",\n  \"competitor_signal\": \"Target released 10 washable rug SKUs in Q2 2025.\",\n  \"style_signal\": \"Geometric patterns trending on Pinterest boards.\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3136,
+        560
+      ],
+      "id": "1689c370-42cf-4c66-9708-2ee0b32bffde",
+      "name": "AI Agent",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3104,
+        784
+      ],
+      "id": "98c85d1e-9fb3-4ef3-b05d-63d419600d50",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "u7olFXhA1AQL56gI",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.item.json.output;\n\n// Step 1: Remove the triple backticks and any surrounding whitespace\nconst cleaned = input.replace(/```json|```/g, '').trim();\n\n// Step 2: Parse JSON\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (error) {\n  throw new Error(`Failed to parse JSON: ${error.message}`);\n}\n\n// Step 3: Return as an array \"trend_signals\"\nreturn [\n  {\n    json: {\n      trend_signals: [\n        parsed.trend_signal,\n        parsed.competitor_signal,\n        parsed.style_signal\n      ]\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        560
+      ],
+      "id": "4bfb0e0f-a921-485b-819e-2010e9e14937",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.trend_signals }}",
+        "options": {
+          "systemMessage": "[Role]\nYou are a retail brand storyteller, campaign copywriter, and content strategist working on the Rugs category for Wayfair.\n\n[Objective]\nYour goal is to analyze scraped data from both a product page URL and a collection page URL, extract concrete trends and patterns, and turn those insights into a visually polished, campaign-ready HTML report that connects real product features to consumer emotions and shopping motivations.\n\nYou must derive the theme, angle, and campaign concept from the scraped data itself — not from assumptions or generic category trends.\n\n[Tone & Style]\nWrite in a tone that is warm, insightful, modern, and confidence-boosting — but always grounded in evidence from the data.\nYour writing should feel like it belongs on Wayfair’s campaign landing pages, blog, and social channels.\n\n[Critical Data-First Rules — MUST FOLLOW]\nBefore writing any creative content, you MUST:\n1. Analyze the scraped product page data.\n2. Analyze the scraped collection page data.\n3. Extract and summarize:\n   - Repeated features (e.g., washable, non-slip, low-pile, pet-friendly, etc.)\n   - Dominant styles, patterns, and colors.\n   - Price clustering (e.g., most products in $50–$100).\n   - Repeated keywords in titles/descriptions.\n   - Any positioning patterns (e.g., “easy care”, “kid-friendly”, “modern”, “cozy”, “small space”, etc.).\n4. From this, derive 3–5 concrete, data-backed insights.\n5. From those insights, identify the emerging theme / positioning.\n\nYou are NOT allowed to invent a theme that is not supported by the scraped data.\n\n[Final Output Requirements]\nYou must output a COMPLETE HTML document with <html>, <head>, and <body> tags and embedded CSS in a <style> block. Use semantic HTML (<h1>, <h2>, <p>, <ul>, <table>, <section>).\n\n[Document Structure — MUST FOLLOW EXACTLY]\n\n1) Key Insights Section (MUST BE FIRST)\n- 3–5 bullet insights derived ONLY from the scraped data.\n- Format each as: “Short actionable insight” → (Signal Category)\n- Signal categories may include: Material, Style, Features, Trend, Competitor Benchmark, Price Point, Consumer Preference.\n- Each insight must be under 15 words.\n- Use ↑ or ↓ where relevant.\n- Wrap in: <ul class=\"insights\"> ... </ul>\n\n2) Blog Post Strategy Section (800–1200 word outline)\nMust include:\n- 3 headline options based on the discovered theme\n- Hook opening grounded in the data\n- Trend explanation (why this shows up in the scraped data)\n- Competitor / market interpretation\n- Product integration tied directly to scraped attributes\n- ONE attributes table (Attribute | Values/examples) based on scraped data\n- 3–4 practical styling / usage tips\n- Soft, engagement-based CTA (not salesy)\n\n3) Instagram Caption Section\n- Separate <section> with <h2>\n- One short caption in <p>\n- Must reference the discovered theme and real features from the data\n- Must include emojis\n- Must include at least 3 SEO hashtags (e.g., #HomeDecorTrends, #WayfairFinds, #Rugs)\n\n[Style Guide — MUST MATCH]\n\nTypography (Inter):\n- H1: 700, 28px, #444444, line-height 1.2, margin-bottom 12–16px\n- H2: 600, 18px, #444444, line-height 1.25, margin-top 18–28px, margin-bottom 10px\n- Body: 400, 13px, #000000, line-height 1.45\n- Insights: 600, 14px, #1F4E79, line-height 1.4\n- Meta: 11px, #6B7280, italic\n\nColors:\n- Headings: #444444\n- Body: #000000\n- Accent: #1F4E79\n- Muted: #6B7280\n- Dividers: #E6E6E6 / #F3F4F6\n\nSpacing:\n- Page margins: 32–40px\n- Paragraph spacing: 8–10px\n- Section spacing: 18–28px\n- Insights bottom margin: 24px\n\n[Table CSS — USE EXACTLY]\ntable { width:100%; border-collapse:collapse; font-family:Inter; font-size:13px; }\nth { text-align:left; font-weight:600; color:#1F4E79; padding:8px 10px; border-bottom:1px solid #E6E6E6; }\ntd { padding:8px 10px; border-bottom:1px dashed #F3F4F6; color:#000000; }\n\n[Utility Classes — MUST USE]\nEmphasis:\n<span class=\"emphasis\">...</span>\nStyle: font-weight:600; color:#1F4E79;\n\nMeta:\n<span class=\"meta\">...</span>\nStyle: font-size:11px; color:#6B7280; font-style:italic;\n\n[Quality Gate — MANDATORY]\nBefore finalizing, you must ask:\n“If the input product URL and collection URL changed, would my insights, theme, and campaign change?”\nIf the answer is NO, your output is invalid and must be regenerated.\n\n[Reminder About Inputs]\nYou will always receive:\n- One product page URL (specific SKU context)\n- One collection/category URL (assortment context)\nYou must use BOTH.\nYour thinking flow must be:\nScraped Data → Patterns → Insights → Theme → Campaign Angle → Creative Output\nNot:\nAssumed Trend → Story → Copy\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3792,
+        560
+      ],
+      "id": "060a705a-e0df-49bc-9ba5-5211dc8ec649",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3728,
+        832
+      ],
+      "id": "827a6b44-7630-4f44-9f0f-23505d270e06",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "u7olFXhA1AQL56gI",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Walmart3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1344,
+        160
+      ],
+      "id": "71c2532a-6c85-4f3d-a7ca-3ed16982a3fe",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        576
+      ],
+      "id": "a27f878f-e1b7-4dba-b18d-e2206b83ba4b",
+      "name": "HTTP Request for Product1",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process all HTML from \"data\" property\nconst inputItems = $input.all();\nconst allProducts = [];\n\nfunction extractProductData(html) {\n  const product = {\n    name: null,\n    price: null,\n    originalPrice: null,\n    sizes: [],\n    colors: [],\n    description: null,\n    productId: null,\n    itemIndex: null // Use itemIndex instead of index\n  };\n\n  // Extract Product Name\n  const nameMatch = html.match(/<h1[^>]*id=\"main-title\"[^>]*>([^<]+)/i);\n  if (nameMatch) product.name = nameMatch[1].trim();\n\n  // Extract Current Price\n  const priceMatch = html.match(/<span[^>]*itemprop=\"price\"[^>]*>([^<]+)/i);\n  if (priceMatch) {\n    product.price = priceMatch[1].trim();\n  }\n\n  // Extract Original Price (if on sale)\n  const originalPriceMatch = html.match(/Was\\s*\\$([0-9,.]+)/i);\n  if (originalPriceMatch) {\n    product.originalPrice = `$${originalPriceMatch[1]}`;\n  }\n\n  // Extract Sizes with individual prices\n  const sizeMatches = [...html.matchAll(/variant-tile-price-text-([^\"]+)\"[^>]*>\\$([0-9,.]+)/g)];\n  sizeMatches.forEach(([, size, price]) => {\n    const isOutOfStock = html.includes('tile-strikethrough');\n    const isSelected = html.includes(`selected, ${size}`);\n    \n    product.sizes.push({\n      size: size.trim(),\n      price: `$${price}`,\n      available: !isOutOfStock,\n      selected: isSelected\n    });\n  });\n\n  // Extract Colors\n  const colorMatches = [...html.matchAll(/aria-label=\"([^\"]+)\"[^>]*role=\"img\"/g)];\n  colorMatches.forEach(([, color]) => {\n    product.colors.push({\n      color: color.trim(),\n      selected: html.includes(`selected, ${color}`)\n    });\n  });\n\n  // Extract Description\n  const descStart = html.indexOf('<ul>', html.indexOf('About this item'));\n  if (descStart !== -1) {\n    const descEnd = html.indexOf('</ul>', descStart);\n    if (descEnd !== -1) {\n      product.description = html.substring(descStart, descEnd)\n        .replace(/<[^>]*>/g, ' ')\n        .replace(/\\s+/g, ' ')\n        .trim();\n    }\n  }\n\n  // Extract Product ID\n  const idMatch = html.match(/\\/ip\\/[^\\/]+\\/(\\d+)/);\n  if (idMatch) product.productId = idMatch[1];\n\n  return product;\n}\n\n// Loop through all input items and access \"data\" property\nfor (let i = 0; i < inputItems.length; i++) {\n  const htmlContent = inputItems[i].json.data;\n  \n  if (htmlContent && typeof htmlContent === 'string') {\n    const productData = extractProductData(htmlContent);\n    productData.itemIndex = i; // Use itemIndex instead of reserved \"index\"\n    productData.sourceDataLength = htmlContent.length;\n    \n    // Wrap in json object as required by n8n\n    allProducts.push({\n      json: productData\n    });\n  }\n}\n\nreturn allProducts;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        160
+      ],
+      "id": "e3f34976-dcb3-47a8-8388-49cbc14ba10c",
+      "name": "Walmart Scraper1",
+      "executeOnce": false,
+      "retryOnFail": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  // Remove duplicates from product_links array\n  const uniqueLinks = [...new Set($input.first().json.product_links)];\n  \n  // Add base URL to make complete URLs\n  const fullUrls = uniqueLinks.map(link => {\n    if (link.startsWith('/')) {\n      return `https://www.amazon.in${link}`;\n    }\n    return link; // in case it's already a full URL\n  });\n  \n  // Update the item with processed URLs\n  item.json.product_links = fullUrls;\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        784
+      ],
+      "id": "7761cb14-3d5b-4041-9f1c-e1779f4aa532",
+      "name": "Make Amazon accessible URL1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split the URLs into individual items for processing one by one\nconst productLinks = $input.first().json.product_links;\nconst results = [];\n\nfor (const link of productLinks) {\n  results.push({\n    url: link\n  });\n}\n\nreturn results.map(r => ({ json: r })).slice(0,10);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        784
+      ],
+      "id": "ea315a4b-4d95-4f78-b534-2dd6d5be0f4f",
+      "name": "Split URLs1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cheerio = require('cheerio');\nconst results = [];\n\nfor (const item of $input.all()) {\n  try {\n    const url = item.json.url;\n    const html = item.json.data;\n    const $ = cheerio.load(html);\n    \n    const name = $('#productTitle').text().trim();\n    const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n    const details = [];\n    $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n      const text = $(el).text().trim();\n      if (text && text.length > 0) {\n        details.push(text);\n      }\n    });\n    \n    const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n    results.push({\n      url,\n      name,\n      price,\n      details,\n      pattern,\n      scraped_at: new Date().toISOString()\n    });\n  } catch (error) {\n    console.error('Error processing item:', error);\n    results.push({\n      url: item.json.url || 'Unknown URL',\n      name: '',\n      price: '',\n      details: [],\n      pattern: '',\n      error: error.message,\n      scraped_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return a single item containing all scraped data as an array\nreturn [{\n  json: {\n    products: results,\n    total_scraped: results.length,\n    successful_scrapes: results.filter(r => !r.error).length,\n    failed_scrapes: results.filter(r => r.error).length,\n    batch_scraped_at: new Date().toISOString()\n  }\n}];\nfor (const item of $input.all()) {\n  try {\n    const url = item.json.url;\n    const html = item.json.data;\n    const $ = cheerio.load(html);\n    \n    const name = $('#productTitle').text().trim();\n    const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n    const details = [];\n    $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n      const text = $(el).text().trim();\n      if (text && text.length > 0) {\n        details.push(text);\n      }\n    });\n    \n    const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n    results.push({\n      url,\n      name,\n      price,\n      details,\n      pattern,\n      scraped_at: new Date().toISOString()\n    });\n  } catch (error) {\n    console.error('Error processing item:', error);\n    results.push({\n      url: item.json.url || 'Unknown URL',\n      name: '',\n      price: '',\n      details: [],\n      pattern: '',\n      error: error.message,\n      scraped_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return a single item containing all scraped data as an array\nreturn [{\n  json: {\n    products: results,\n    total_scraped: results.length,\n    successful_scrapes: results.filter(r => !r.error).length,\n    failed_scrapes: results.filter(r => r.error).length,\n    batch_scraped_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        784
+      ],
+      "id": "d9712726-8434-440e-94ad-2ca1e2ac7c45",
+      "name": "Amazon Scraper2",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Walmart2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1328,
+        400
+      ],
+      "id": "1a691135-c704-476d-8ff8-82ea7b32f1ac"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Walmart4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1712,
+        400
+      ],
+      "id": "72f9917c-003e-47f8-950c-9734108423d4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process all HTML from \"data\" property\nconst inputItems = $input.all();\nconst allProducts = [];\n\nfunction extractProductData(html) {\n  const product = {\n    name: null,\n    price: null,\n    originalPrice: null,\n    sizes: [],\n    colors: [],\n    description: null,\n    productId: null,\n    itemIndex: null // Use itemIndex instead of index\n  };\n\n  // Extract Product Name\n  const nameMatch = html.match(/<h1[^>]*id=\"main-title\"[^>]*>([^<]+)/i);\n  if (nameMatch) product.name = nameMatch[1].trim();\n\n  // Extract Current Price\n  const priceMatch = html.match(/<span[^>]*itemprop=\"price\"[^>]*>([^<]+)/i);\n  if (priceMatch) {\n    product.price = priceMatch[1].trim();\n  }\n\n  // Extract Original Price (if on sale)\n  const originalPriceMatch = html.match(/Was\\s*\\$([0-9,.]+)/i);\n  if (originalPriceMatch) {\n    product.originalPrice = `$${originalPriceMatch[1]}`;\n  }\n\n  // Extract Sizes with individual prices\n  const sizeMatches = [...html.matchAll(/variant-tile-price-text-([^\"]+)\"[^>]*>\\$([0-9,.]+)/g)];\n  sizeMatches.forEach(([, size, price]) => {\n    const isOutOfStock = html.includes('tile-strikethrough');\n    const isSelected = html.includes(`selected, ${size}`);\n    \n    product.sizes.push({\n      size: size.trim(),\n      price: `$${price}`,\n      available: !isOutOfStock,\n      selected: isSelected\n    });\n  });\n\n  // Extract Colors\n  const colorMatches = [...html.matchAll(/aria-label=\"([^\"]+)\"[^>]*role=\"img\"/g)];\n  colorMatches.forEach(([, color]) => {\n    product.colors.push({\n      color: color.trim(),\n      selected: html.includes(`selected, ${color}`)\n    });\n  });\n\n  // Extract Description\n  const descStart = html.indexOf('<ul>', html.indexOf('About this item'));\n  if (descStart !== -1) {\n    const descEnd = html.indexOf('</ul>', descStart);\n    if (descEnd !== -1) {\n      product.description = html.substring(descStart, descEnd)\n        .replace(/<[^>]*>/g, ' ')\n        .replace(/\\s+/g, ' ')\n        .trim();\n    }\n  }\n\n  // Extract Product ID\n  const idMatch = html.match(/\\/ip\\/[^\\/]+\\/(\\d+)/);\n  if (idMatch) product.productId = idMatch[1];\n\n  return product;\n}\n\n// Loop through all input items and access \"data\" property\nfor (let i = 0; i < inputItems.length; i++) {\n  const htmlContent = inputItems[i].json.data;\n  \n  if (htmlContent && typeof htmlContent === 'string') {\n    const productData = extractProductData(htmlContent);\n    productData.itemIndex = i; // Use itemIndex instead of reserved \"index\"\n    productData.sourceDataLength = htmlContent.length;\n    \n    // Wrap in json object as required by n8n\n    allProducts.push({\n      json: productData\n    });\n  }\n}\n\nreturn allProducts;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        400
+      ],
+      "id": "4d4ce743-6c9a-4e47-910f-6e2f9ecb52c2",
+      "name": "Walmart Scraper2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Get Amazon collection links safely\nlet amazonCollections = (inputData.amazon_collections || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n\n// Return each Amazon collection link as its own object\nreturn amazonCollections.map(link => ({\n    json: { url: link }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        784
+      ],
+      "id": "2168d91e-8a73-4ba4-9e7d-534ddb115d9f",
+      "name": "Amazon collections"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Get Amazon product links safely\nlet amazonProducts = (inputData.amazon_products || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n\n// Return each Amazon product link as its own object\nreturn amazonProducts.map(link => ({\n    json: { url: link }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        576
+      ],
+      "id": "47215152-b0a9-45b8-a90e-746c25108fe5",
+      "name": "Amzzon product"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Get Walmart collection links safely\nlet walmartCollections = (inputData.walmart_collections || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n\n// Return each Walmart collection link as its own object\nreturn walmartCollections.map(link => ({\n    json: { url: link }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        400
+      ],
+      "id": "5bd1f539-b7b7-46de-8d49-d2922dee08a0",
+      "name": "Walmart Collection"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Get Walmart product links safely\nlet walmartProducts = (inputData.walmart_products || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n\n// Return each Walmart product link as its own object\nreturn walmartProducts.map(link => ({\n    json: { url: link }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        160
+      ],
+      "id": "540b24fe-c039-42ff-84aa-deeab965e4ce",
+      "name": "Walmart products"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Function to clean links (remove trailing commas and whitespace)\nfunction cleanLinks(links) {\n    return (links || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n}\n\n// Extract Walmart links: support old 'walmart' array or already separated arrays\nlet allWalmartLinks = [];\nif (inputData.walmart) {\n    allWalmartLinks = cleanLinks(inputData.walmart);\n} else {\n    // If already split arrays exist, merge them\n    allWalmartLinks = cleanLinks([...(inputData.walmart_products || []), ...(inputData.walmart_collections || [])]);\n}\n\n// Classify links: products have /ip/, collections have /search?q=/ or /browse/\nlet walmart_products = [];\nlet walmart_collections = [];\n\nallWalmartLinks.forEach(link => {\n    if (/\\/ip\\//.test(link)) {\n        walmart_products.push(link);\n    } else if (/\\/search\\?q=|\\/browse\\//.test(link)) {\n        walmart_collections.push(link);\n    }\n});\n\n// Return only Walmart products and collections\nreturn [\n    {\n        json: {\n            walmart_products,\n            walmart_collections\n        }\n    }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        288
+      ],
+      "id": "fbbf8b29-2ffd-4d3b-bd87-5dc1b3a89b3f",
+      "name": "Walmart Scaper"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get input JSON\nlet inputData = $input.first().json;\n\n// Function to clean links (remove trailing commas and whitespace)\nfunction cleanLinks(links) {\n    return (links || []).map(l => l.trim().replace(/,+$/, \"\")).filter(Boolean);\n}\n\n// Extract Amazon links: support old 'amazon' array or already separated arrays\nlet allAmazonLinks = [];\nif (inputData.amazon) {\n    allAmazonLinks = cleanLinks(inputData.amazon);\n} else {\n    // If already split arrays exist, merge them\n    allAmazonLinks = cleanLinks([...(inputData.amazon_products || []), ...(inputData.amazon_collections || [])]);\n}\n\n// Classify links: \n// Products have /dp/ or /gp/product/\n// Collections have /gp/bestsellers/ or /s?\nlet amazon_products = [];\nlet amazon_collections = [];\n\nallAmazonLinks.forEach(link => {\n    if (/\\/dp\\/|\\/gp\\/product\\//.test(link)) {\n        amazon_products.push(link);\n    } else if (/\\/gp\\/bestsellers\\/|\\/s\\?/.test(link)) {\n        amazon_collections.push(link);\n    }\n});\n\n// Return only Amazon products and collections\nreturn [\n    {\n        json: {\n            amazon_products,\n            amazon_collections\n        }\n    }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        688
+      ],
+      "id": "ed26f81e-1b5c-4fba-8696-5aa0439706ad",
+      "name": "Amazon scraper"
+    },
+    {
+      "parameters": {
+        "jsCode": "let inputText =\n  $input.first().json.chatInput ||\n  $('When chat message received').first().json.chatInput ||\n  '';\n\n// Regex patterns\nconst walmartRegex = /(https?:\\/\\/(?:www\\.)?walmart\\.com\\/[^\\s]+)/gi;\nconst amazonRegex = /(https?:\\/\\/(?:www\\.)?amazon\\.[a-z.]+\\/[^\\s]+)/gi;\n\n// Extract all links\nlet walmartLinks = inputText.match(walmartRegex) || [];\nlet amazonLinks = inputText.match(amazonRegex) || [];\n\n// Clean trailing punctuation + dedupe\nfunction clean(u) {\n  return u.trim().replace(/[>,\")\\]]+$/g, '');\n}\nwalmartLinks = [...new Set(walmartLinks.map(clean))];\namazonLinks = [...new Set(amazonLinks.map(clean))];\n\n// Function to classify links\nfunction classifyLinks(links, productPattern, collectionPattern) {\n  let products = [];\n  let collections = [];\n\n  for (let link of links) {\n    if (productPattern.test(link)) {\n      products.push(link);\n    } else if (collectionPattern.test(link)) {\n      collections.push(link);\n    }\n  }\n\n  return { products, collections };\n}\n\n// Walmart: products have /ip/, collections /search?q=/ or /browse/\nlet walmartClassified = classifyLinks(\n  walmartLinks,\n  /\\/ip\\//i,\n  /\\/search\\?q=|\\/browse\\//i\n);\n\n// Amazon: products have /dp/ or /gp/product/,\n// ✅ collections include /gp/bestsellers/, /s?, and ALSO /b? (browse-node) or node=\nlet amazonClassified = classifyLinks(\n  amazonLinks,\n  /\\/dp\\/|\\/gp\\/product\\//i,\n  /\\/gp\\/bestsellers\\/|\\/s\\?|\\/b\\?|\\/b\\/|[?&]node=/i\n);\n\n// Return grouped arrays\nreturn [\n  {\n    json: {\n      walmart_products: walmartClassified.products,\n      walmart_collections: walmartClassified.collections,\n      amazon_products: amazonClassified.products,\n      amazon_collections: amazonClassified.collections,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        704
+      ],
+      "id": "7eaa9a14-015b-49fc-8606-b15192366c1d",
+      "name": "Find URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n JavaScript Code to Process and Return All Data in One Array\n// Combines all products and articles into a single array\n\nconst allData = [];\n\n// Loop through all input items\nfor (const item of $input.all()) {\n  let dataArray = item.json;\n  \n  // Handle if data is wrapped in a \"data\" property\n  if (dataArray.data && Array.isArray(dataArray.data)) {\n    dataArray = dataArray.data;\n  }\n  \n  // If it's already an array, use it directly\n  if (Array.isArray(dataArray)) {\n    // Process each item in the array\n    dataArray.forEach(data => {\n      // Check if this is a products object (has products array)\n      if (data.products && Array.isArray(data.products)) {\n        // Process each product\n        data.products.forEach(product => {\n          if (!product.error) { // Skip failed scrapes\n            allData.push({\n              type: 'product',\n              name: product.name,\n              price: product.price,\n              url: product.url,\n              pattern: product.pattern,\n              details: product.details,\n              scraped_at: product.scraped_at,\n              myNewField: 1,\n              // Additional processing fields\n              price_numeric: parseInt(product.price.replace(/[^\\d]/g, '')) || 0,\n              has_details: product.details && product.details.length > 0,\n              category: product.name.toLowerCase().includes('mat') ? 'mat' : \n                       product.name.toLowerCase().includes('rug') ? 'rug' : 'carpet',\n              detail_count: product.details ? product.details.length : 0\n            });\n          }\n        });\n        \n        // Also add summary data for the batch\n        allData.push({\n          type: 'scrape_summary',\n          total_scraped: data.total_scraped,\n          successful_scrapes: data.successful_scrapes,\n          failed_scrapes: data.failed_scrapes,\n          batch_scraped_at: data.batch_scraped_at,\n          myNewField: 1\n        });\n      }\n      \n      // Check if this is a news article\n      else if (data.title && data.link) {\n        allData.push({\n          type: 'article',\n          title: data.title,\n          link: data.link,\n          pubDate: data.pubDate,\n          isoDate: data.isoDate,\n          content: data.content,\n          contentSnippet: data.contentSnippet,\n          myNewField: 1,\n          // Additional processing fields\n          word_count: data.contentSnippet ? data.contentSnippet.split(' ').length : 0,\n          has_content: Boolean(data.content),\n          publish_date: new Date(data.isoDate),\n          domain: data.link.split('/')[2] || data.link,\n          source: data.link.split('/')[2] === 'corporate.target.com' ? 'Target' : \n                  data.link.split('/')[2] === 'ruginsider.com' ? 'Rug Insider' : 'Other'\n        });\n      }\n      \n      // Handle any other data structure\n      else {\n        allData.push({\n          ...data,\n          type: 'other',\n          myNewField: 1,\n          processed_at: new Date().toISOString()\n        });\n      }\n    });\n  }\n  // If it's not an array, process as single item\n  else {\n    allData.push({\n      ...dataArray,\n      type: 'single_item',\n      myNewField: 1,\n      processed_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return all data as a single array in one item\nreturn [{ json: { allData: allData, totalItems: allData.length, processedAt: new Date().toISOString() } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2880,
+        560
+      ],
+      "id": "4a3f025b-7080-48f0-9b16-493e602ed862",
+      "name": "Combine all data"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2624,
+        512
+      ],
+      "id": "8b3a9721-58d4-45fc-bc5e-1e92414eab5e",
+      "name": "Merge all data"
+    },
+    {
+      "parameters": {
+        "url": "https://www.amazon.com/s?k=best+selling+rugs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        1120
+      ],
+      "id": "86d3a87c-3ffd-4859-bcdf-86248695a399",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "product_links",
+              "cssSelector": "div div a[href*='/dp/']",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "260c6575-7c6d-49e1-b089-3b78c8b0cf31",
+      "name": "Extract Amazon Product Data1",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        1232,
+        1120
+      ],
+      "typeVersion": 1.2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  // Remove duplicates from product_links array\n  const uniqueLinks = [...new Set($input.first().json.product_links)];\n  \n  // Add base URL to make complete URLs\n  const fullUrls = uniqueLinks.map(link => {\n    if (link.startsWith('/')) {\n      return `https://www.amazon.com${link}`;\n    }\n    return link; // in case it's already a full URL\n  });\n  \n  // Update the item with processed URLs\n  item.json.product_links = fullUrls;\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        1120
+      ],
+      "id": "1c0000c0-679c-4618-9178-16e1672924c1",
+      "name": "Make Amazon accessible URL",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// // Split the URLs into individual items for processing one by one\n// const productLinks = $input.first().json.product_links;\n// const results = [];\n\n// for (const link of productLinks) {\n//   results.push({\n//     url: link\n//   });\n// }\n\n// return results.map(r => ({ json: r }));\n\n\nconst productLinks = $input.first().json.product_links.slice(0, 10); \nconst results = [];\n\nfor (const link of productLinks) {\n  results.push({ url: link });\n}\n\nreturn results.map(r => ({ json: r })).slice(0,10);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        1120
+      ],
+      "id": "7c4c7f6c-5518-4f10-98fd-1ee6e3e51706",
+      "name": "Split URLs"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1840,
+        1120
+      ],
+      "id": "bf217074-35ee-4171-b573-435e0163cf31",
+      "name": "HTTP Request for Product",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// const cheerio = require('cheerio');\n// const results = [];\n\n// for (const item of $input.all()) {\n//   try {\n//     const url = item.json.url;\n//     const html = item.json.data;\n//     const $ = cheerio.load(html);\n    \n//     const name = $('#productTitle').text().trim();\n//     const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n//     const details = [];\n//     $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n//       const text = $(el).text().trim();\n//       if (text && text.length > 0) {\n//         details.push(text);\n//       }\n//     });\n    \n//     const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n//     results.push({\n//       url,\n//       name,\n//       price,\n//       details,\n//       pattern,\n//       scraped_at: new Date().toISOString()\n//     });\n//   } catch (error) {\n//     console.error('Error processing item:', error);\n//     results.push({\n//       url: item.json.url || 'Unknown URL',\n//       name: '',\n//       price: '',\n//       details: [],\n//       pattern: '',\n//       error: error.message,\n//       scraped_at: new Date().toISOString()\n//     });\n//   }\n// }\n\n// // Return a single item containing all scraped data as an array\n// return [{\n//   json: {\n//     products: results,\n//     total_scraped: results.length,\n//     successful_scrapes: results.filter(r => !r.error).length,\n//     failed_scrapes: results.filter(r => r.error).length,\n//     batch_scraped_at: new Date().toISOString()\n//   }\n// }];\n// for (const item of $input.all()) {\n//   try {\n//     const url = item.json.url;\n//     const html = item.json.data;\n//     const $ = cheerio.load(html);\n    \n//     const name = $('#productTitle').text().trim();\n//     const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n//     const details = [];\n//     $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n//       const text = $(el).text().trim();\n//       if (text && text.length > 0) {\n//         details.push(text);\n//       }\n//     });\n    \n//     const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n//     results.push({\n//       url,\n//       name,\n//       price,\n//       details,\n//       pattern,\n//       scraped_at: new Date().toISOString()\n//     });\n//   } catch (error) {\n//     console.error('Error processing item:', error);\n//     results.push({\n//       url: item.json.url || 'Unknown URL',\n//       name: '',\n//       price: '',\n//       details: [],\n//       pattern: '',\n//       error: error.message,\n//       scraped_at: new Date().toISOString()\n//     });\n//   }\n// }\n\n// // Return a single item containing all scraped data as an array\n// return [{\n//   competitor_data: {\n//     products: results,\n//     total_scraped: results.length,\n//     successful_scrapes: results.filter(r => !r.error).length,\n//     failed_scrapes: results.filter(r => r.error).length,\n//     batch_scraped_at: new Date().toISOString()\n//   }\n// }];\n\n\nconst cheerio = require('cheerio');\nconst results = [];\n\nfor (const item of $input.all()) {\n  try {\n    const url = item.json.url;\n    const html = item.json.data;\n    const $ = cheerio.load(html);\n    \n    const name = $('#productTitle').text().trim();\n    let price = $('span.a-price span.a-price-whole').first().text().trim();\n    if (price) {\n      price = `₹${price}`;\n    }\n    \n    const details = [];\n    $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n      const text = $(el).text().trim();\n      if (text && text.length > 0) {\n        details.push(text);\n      }\n    });\n    \n    const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n    results.push({\n      url,\n      name,\n      price,\n      details,\n      pattern,\n      scraped_at: new Date().toISOString()\n    });\n  } catch (error) {\n    console.error('Error processing item:', error);\n    results.push({\n      url: item.json.url || 'Unknown URL',\n      name: '',\n      price: '',\n      details: [],\n      pattern: '',\n      error: error.message,\n      scraped_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return a single item containing all scraped data as an array\nreturn [{\n  json: {\n    competitor_data: results,\n    total_scraped: results.length,\n    successful_scrapes: results.filter(r => !r.error).length,\n    failed_scrapes: results.filter(r => r.error).length,\n    batch_scraped_at: new Date().toISOString()\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        1120
+      ],
+      "id": "963dd6be-dff9-437b-b993-b7c72480d893",
+      "name": "Extract Data",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Find trend from product data and generate trend signals.\n",
+        "height": 304,
+        "width": 416,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3040,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "8a084f43-5ffe-4517-8e46-04f466611042",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "##  By the trend signals 'Generate Content & Insights' ",
+        "height": 288,
+        "width": 384,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3712,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "b4b30618-a30f-4bba-bfe8-3aa656e40ee6",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "html": "{{ $json.cleaned_minified_html }}"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        4800,
+        560
+      ],
+      "id": "37612b36-0f43-480f-a71d-ebdc828f84ab",
+      "name": "See HTML output here"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.cleaned_minified_html;\nconst buffer = Buffer.from(text, 'utf8');\nconst binaryData = {\n  data: buffer.toString('base64'),\n  mimeType: 'application/octet-stream',\n  fileName: 'file.html',\n};\nitems[0].binary = { data: binaryData };\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4480,
+        560
+      ],
+      "id": "2ab1eeb5-a356-448f-b21d-a06e82d0c173",
+      "name": "Download HTML file from Here"
+    },
+    {
+      "parameters": {
+        "jsCode": "let html = $input.first().json.output;\n\n// Remove markdown fences like ```html or ```\nhtml = html.replace(/```html|```/g, \"\");\n\n// Remove all \\n, \\r, \\t, and excessive spaces\nhtml = html.replace(/\\\\[nrt]/g, \" \").replace(/\\s{2,}/g, \" \");\n\n// Remove duplicate or misplaced <html> / <body> wrappers\nhtml = html.replace(/<\\/?body><\\/?body>/g, \"\")\n           .replace(/<\\/?html><\\/?html>/g, \"\")\n           .replace(/<body><!DOCTYPE html>/g, \"<!DOCTYPE html>\");\n\n// Trim leading/trailing spaces\nhtml = html.trim();\n\n// Optional: Ensure the final HTML starts and ends properly\nif (!html.startsWith(\"<!DOCTYPE html>\")) {\n  html = `<!DOCTYPE html><html><body>${html}</body></html>`;\n}\n\n// Return clean minified HTML\nreturn [{ json: { cleaned_minified_html: html, agent_id: 4, } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4192,
+        560
+      ],
+      "id": "13bb48d6-41bf-46e0-aa4e-884714690f1c",
+      "name": "Clean AI output"
+    },
+    {
+      "parameters": {
+        "content": "# Overview:\n\nIn this workflow we can automate content & insight writing.\n\n\n## Sample Input:\n\n   \"Amazon product URL: https://www.amazon.com/Soalmost-Washable-Vintage-Non-Slip-Resistant/dp/B0CYT2LXHC/ref=sr_1_2_sspa?crid=2ICEM72R7CNKO&dib=eyJ2IjoiMSJ9.NdoKffVWDYpttqzeEz7nJ1HpGzqQ8kRW0IQsTDkYv5REzozD2VUlLAu4OzqmisBfQCE5-GURuY2EnvQYPoqutusJK4eLfsIV5tcOxwjbY8W0HHkTV3U1Tl9k_35jop_37cStrHrE4g58204JrYEHlOUR1LzeNujbkQdmxrPIk20pe_R1K7hOy7fkY4dC9_2DVJ9Axpyu2Z3gZ1AEQUsKxVSloW0-9M9V0IrPUAGr8P8foYmhayw-y6tWyWltr_TYF2EdCXuF4kvn0jwvqIjltvl2htEGmANBTE9PJ9SXrjw.hQup8uY4Q3S6EOG--S3pvR8XMUREFkn6VdRQWcs0Vhs&dib_tag=se&keywords=Best%2BSellers%2Bin%2Brugs&qid=1763148079&sprefix=best%2Bsellers%2Bin%2Brug%2Caps%2C274&sr=8-2-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1\n\nAmazon collection URL:  https://www.amazon.com/s?k=Best+Sellers+in+rugs&crid=2ICEM72R7CNKO&sprefix=best+sellers+in+rug%2Caps%2C274&ref=nb_sb_noss_2\n    Walmart product url: https://www.walmart.com/ip/Handmade-Contemporary-Abstract-Abstract-Area-Rug-Ivory-8-0-x-10-0/983350396?classType=VARIANT&adsRedirect=true,\n    Walmart collection url: https://www.walmart.com/search?q=Best+selling+rugs\n\nBased on this top product data generate Insights and content.\"\n\n#### In this input also you can give only one product urls or give only collection url. If you find best rugs product from amazon, give only that product url. Not \n",
+        "height": 1168,
+        "width": 1024
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1120,
+        208
+      ],
+      "typeVersion": 1,
+      "id": "46ec6500-d082-42cb-865f-7ef684a08493",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# AI-Generated Insights & Content Automation - Project 4\n\n1. Trigger this workflow by the WALMART and AMAZON products and collection urls.\n2. We can scraped best selling products from WALMART & AMAZON.\n3. By this product data first we generate trend signls(e.g., \"Eco-friendly jute rugs trending in Amazon Top 100.\").\n4. After generating trend signals, We generate Insights & Content. \n5. We can use Gemini LLM model for generate content and insights.\n",
+        "height": 1296,
+        "width": 2224,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        240,
+        64
+      ],
+      "typeVersion": 1,
+      "id": "dd405cb1-7cf5-4583-afe3-ea6c299f6997",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## See output tamplate  here.",
+        "height": 240,
+        "width": 272,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4720,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "ffa31586-da68-4252-887f-221a651b4a75",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Also download HTML file here.",
+        "height": 240,
+        "width": 272,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4400,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "766c0f39-f791-434b-81f6-7b0135cf346a",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cheerio = require('cheerio');\n\nconst results = [];\nconst seen = new Set(); // Track unique URLs\n\n// Get HTML from previous node\n// Adjust \"PreviousNodeName\" to match your workflow\nconst html = $input.first().json.data;\n\n// Load into cheerio\nconst $ = cheerio.load(html);\n\n// Walmart product cards selector\n$('div[data-testid=\"list-view\"] a[href*=\"/ip/\"]').each((i, el) => {\n  const url = $(el).attr('href');\n  if (url) {\n    // Ensure absolute URL\n    const fullUrl = url.startsWith('http') \n      ? url \n      : `https://www.walmart.com${url}`;\n\n    // Add only if not already seen\n    if (!seen.has(fullUrl)) {\n      seen.add(fullUrl);\n      results.push({ url: fullUrl });\n    }\n  }\n});\n\n// Return deduplicated results\nreturn results.map(r => ({ json: r })).slice(0,10);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        400
+      ],
+      "id": "ca683bf4-6bf4-4cd7-9f5d-c0f366d0920d",
+      "name": "Split URL 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cheerio = require('cheerio');\nconst results = [];\n\nfor (const item of $input.all()) {\n  try {\n    const url = item.json.url;\n    const html = item.json.data;\n    const $ = cheerio.load(html);\n    \n    const name = $('#productTitle').text().trim();\n    const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n    const details = [];\n    $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n      const text = $(el).text().trim();\n      if (text && text.length > 0) {\n        details.push(text);\n      }\n    });\n    \n    const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n    results.push({\n      url,\n      name,\n      price,\n      details,\n      pattern,\n      scraped_at: new Date().toISOString()\n    });\n  } catch (error) {\n    console.error('Error processing item:', error);\n    results.push({\n      url: item.json.url || 'Unknown URL',\n      name: '',\n      price: '',\n      details: [],\n      pattern: '',\n      error: error.message,\n      scraped_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return a single item containing all scraped data as an array\nreturn [{\n  json: {\n    products: results,\n    total_scraped: results.length,\n    successful_scrapes: results.filter(r => !r.error).length,\n    failed_scrapes: results.filter(r => r.error).length,\n    batch_scraped_at: new Date().toISOString()\n  }\n}];\nfor (const item of $input.all()) {\n  try {\n    const url = item.json.url;\n    const html = item.json.data;\n    const $ = cheerio.load(html);\n    \n    const name = $('#productTitle').text().trim();\n    const price = $('span.a-price span.a-price-whole').first().text().trim();\n    \n    const details = [];\n    $('#feature-bullets ul.a-unordered-list li span.a-list-item').each((i, el) => {\n      const text = $(el).text().trim();\n      if (text && text.length > 0) {\n        details.push(text);\n      }\n    });\n    \n    const pattern = $('#inline-twister-expanded-dimension-text-pattern_name').text().trim();\n    \n    results.push({\n      url,\n      name,\n      price,\n      details,\n      pattern,\n      scraped_at: new Date().toISOString()\n    });\n  } catch (error) {\n    console.error('Error processing item:', error);\n    results.push({\n      url: item.json.url || 'Unknown URL',\n      name: '',\n      price: '',\n      details: [],\n      pattern: '',\n      error: error.message,\n      scraped_at: new Date().toISOString()\n    });\n  }\n}\n\n// Return a single item containing all scraped data as an array\nreturn [{\n  json: {\n    products: results,\n    total_scraped: results.length,\n    successful_scrapes: results.filter(r => !r.error).length,\n    failed_scrapes: results.filter(r => r.error).length,\n    batch_scraped_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        576
+      ],
+      "id": "7b804c4e-463b-4419-8054-60dc07614a2d",
+      "name": "Get Amazon Product Detail",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "i18n-prefs=USD; lc-main=en_US; session-id=141-8209501-9981461; session-id-time=2082787201l; ubid-main=134-5719883-5851066"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1264,
+        784
+      ],
+      "id": "db81c926-ce97-4a79-bea7-3b85cf684674",
+      "name": "Get HTML of website",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "product_links",
+              "cssSelector": "div div a[href*='/dp/']",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c753ca01-027c-467e-991d-a2b0f517bbf3",
+      "name": "Extract Amazon Product URLs",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        1440,
+        784
+      ],
+      "typeVersion": 1.2,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 1000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1968,
+        784
+      ],
+      "id": "7f19d21e-fc8e-439b-ba39-71795630ba19",
+      "name": "URL wise HTML gather",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "agent_output",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agentId",
+              "keyValue": "={{ $json.agent_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4720,
+        1040
+      ],
+      "id": "c444f347-e172-499c-b26e-aef67b132443",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "tuP48IahPRHBKrQb",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2b129c4e-e288-4981-b09a-a2320c4dbea8",
+              "leftValue": "={{ $json.agentId }}",
+              "rightValue": "4",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4928,
+        1040
+      ],
+      "id": "f95a56b0-2fda-4b47-989e-2dd948967ff6",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "agent_output",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "agentId",
+              "condition": "eq",
+              "keyValue": "4"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "output_text",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.output }}"
+            },
+            {
+              "fieldId": "agentId",
+              "fieldValue": "4"
+            },
+            {
+              "fieldId": "input_text",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.input }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5136,
+        944
+      ],
+      "id": "88935106-074b-4483-97cd-37eeb466463c",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tuP48IahPRHBKrQb",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "agent_output",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "output_text",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.output }}"
+            },
+            {
+              "fieldId": "agentId",
+              "fieldValue": "4"
+            },
+            {
+              "fieldId": "input_text",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.input }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5136,
+        1136
+      ],
+      "id": "8c2f81bb-0f2f-47e5-a516-14c3ce33b258",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tuP48IahPRHBKrQb",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'agent-id' to each JSON object\nfor (const item of $input.all()) {\nitem.json[\"agent_id\"] = 4;\n  item.json[\"input\"] = $('When chat message received').first().json.chatInput;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4512,
+        1040
+      ],
+      "id": "27f2b8e2-c2c7-465a-9a6b-301f96310f57",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "content": "## Superbase",
+        "height": 464,
+        "width": 1072,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4400,
+        896
+      ],
+      "typeVersion": 1,
+      "id": "c707a6b9-19b8-4a7b-ae96-18f3d64d8812",
+      "name": "Sticky Note6"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Find URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Clean AI output",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart3": {
+      "main": [
+        [
+          {
+            "node": "Walmart Scraper1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request for Product1": {
+      "main": [
+        [
+          {
+            "node": "Get Amazon Product Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart Scraper1": {
+      "main": [
+        [
+          {
+            "node": "Merge all data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Amazon accessible URL1": {
+      "main": [
+        [
+          {
+            "node": "Split URLs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split URLs1": {
+      "main": [
+        [
+          {
+            "node": "URL wise HTML gather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon Scraper2": {
+      "main": [
+        [
+          {
+            "node": "Merge all data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Walmart2": {
+      "main": [
+        [
+          {
+            "node": "Split URL 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart4": {
+      "main": [
+        [
+          {
+            "node": "Walmart Scraper2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart Scraper2": {
+      "main": [
+        [
+          {
+            "node": "Merge all data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Amazon collections": {
+      "main": [
+        [
+          {
+            "node": "Get HTML of website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amzzon product": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request for Product1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart Collection": {
+      "main": [
+        [
+          {
+            "node": "Walmart2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart products": {
+      "main": [
+        [
+          {
+            "node": "Walmart3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Walmart Scaper": {
+      "main": [
+        [
+          {
+            "node": "Walmart products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Walmart Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Amazon scraper": {
+      "main": [
+        [
+          {
+            "node": "Amzzon product",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Amazon collections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find URLs": {
+      "main": [
+        [
+          {
+            "node": "Walmart Scaper",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Amazon scraper",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine all data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge all data": {
+      "main": [
+        [
+          {
+            "node": "Combine all data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Extract Amazon Product Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Amazon Product Data1": {
+      "main": [
+        [
+          {
+            "node": "Make Amazon accessible URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Amazon accessible URL": {
+      "main": [
+        [
+          {
+            "node": "Split URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split URLs": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request for Product",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request for Product": {
+      "main": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Merge all data",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Download HTML file from Here": {
+      "main": [
+        [
+          {
+            "node": "See HTML output here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean AI output": {
+      "main": [
+        [
+          {
+            "node": "Download HTML file from Here",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split URL 1": {
+      "main": [
+        [
+          {
+            "node": "Walmart4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Amazon Product Detail": {
+      "main": [
+        [
+          {
+            "node": "Merge all data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Get HTML of website": {
+      "main": [
+        [
+          {
+            "node": "Extract Amazon Product URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Amazon Product URLs": {
+      "main": [
+        [
+          {
+            "node": "Make Amazon accessible URL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "URL wise HTML gather": {
+      "main": [
+        [
+          {
+            "node": "Amazon Scraper2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "See HTML output here": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "4cf1607c-5f9a-4ed8-a1bc-b8756fdf1809",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1d74728e369c153ce006907d6fdb69c686bbec838695d0c317a4b28ae5a36d63"
+  },
+  "id": "Qw3nCKnRQbc4XhQ2",
+  "tags": []
+}
