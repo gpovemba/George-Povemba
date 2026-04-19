@@ -1,0 +1,5 @@
+py-clob-client
+python-dotenv
+termcolor
+requests
+web3
