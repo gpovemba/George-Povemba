@@ -70,6 +70,13 @@ MARKET_DURATION = 300         # 5-minute markets
 ET = timezone(timedelta(hours=-5))
 
 # =============================================================================
+# MOON DEV - DRY RUN MODE
+# Set DRY_RUN = True to simulate without placing real orders.
+# All logic runs normally — order placement is skipped and logged instead.
+# =============================================================================
+DRY_RUN = True
+
+# =============================================================================
 # MOON DEV - SESSION STATS
 # =============================================================================
 SESSION_ENTRIES  = 0
@@ -249,6 +256,10 @@ def get_order_status_for_id(order_id):
 
 def place_limit_order(token_id, side, price, size, neg_risk=False):
     """Place a limit order for the configured account."""
+    if DRY_RUN:
+        log_event(f"[DRY RUN] Would place {side} @ ${price:.4f} x {size} shares", "magenta")
+        return {'orderID': f'dry-run-{int(time.time())}', 'status': 'LIVE'}
+
     from py_clob_client.clob_types import OrderArgs, PartialCreateOrderOptions
 
     client = _build_client()
@@ -585,7 +596,9 @@ def draw_dashboard(state, time_left, up_book, down_book, hype_msg):
 def main():
     global SESSION_ENTRIES, SESSION_SKIPS, SESSION_ATTEMPTS
 
-    if not os.getenv(PRIVATE_KEY_ENV_NAME) or not os.getenv(PUBLIC_KEY_ENV_NAME):
+    if DRY_RUN:
+        log_event("🟣 DRY RUN MODE — no real orders will be placed", "magenta")
+    elif not os.getenv(PRIVATE_KEY_ENV_NAME) or not os.getenv(PUBLIC_KEY_ENV_NAME):
         print(colored(
             f"❌ Moon Dev - Missing {PRIVATE_KEY_ENV_NAME} / {PUBLIC_KEY_ENV_NAME} in .env!",
             "red",
