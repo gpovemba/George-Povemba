@@ -494,7 +494,7 @@ def run_backtest(
 # RESULTS DISPLAY
 # =============================================================================
 
-def print_results(results: BacktestResults, show_trades: bool = True):
+def print_results(results: BacktestResults, show_trades: bool = False):
     print("\n" + "="*60)
     print("  BACKTEST RESULTS")
     print("="*60)
@@ -502,13 +502,54 @@ def print_results(results: BacktestResults, show_trades: bool = True):
     print(f"  Markets entered: {results.markets_entered}")
     print(f"  Markets skipped: {results.markets_skipped}")
     print()
-    print(f"  Wins:      {results.wins}")
-    print(f"  Losses:    {results.losses}")
-    print(f"  Win rate:  {results.win_rate*100:.1f}%")
+    print(f"  Wins:          {results.wins}")
+    print(f"  Losses:        {results.losses}")
+    print(f"  Win rate:      {results.win_rate*100:.1f}%")
     print()
-    print(f"  Total PnL:    ${results.total_pnl:+.2f}")
+    print(f"  Total PnL:     ${results.total_pnl:+.2f}")
     print(f"  Total wagered: ${results.total_wagered:.2f}")
     print(f"  ROI:           {results.roi*100:.1f}%")
+    print("="*60)
+
+    # --- Time-of-day breakdown (ET) ---
+    if results.trades:
+        from collections import defaultdict
+        hourly = defaultdict(lambda: {"wins": 0, "losses": 0, "pnl": 0.0, "wagered": 0.0})
+        for t in results.trades:
+            hour = datetime.fromtimestamp(t.entry_time, tz=ET).hour
+            hourly[hour]["wins"]    += 1 if t.won else 0
+            hourly[hour]["losses"]  += 0 if t.won else 1
+            hourly[hour]["pnl"]     += t.pnl
+            hourly[hour]["wagered"] += t.entry_price * t.shares
+
+        print("\n  HOURLY BREAKDOWN (ET)")
+        print(f"  {'Hour':<8} {'Trades':>6} {'W':>4} {'L':>4} {'Win%':>6} {'PnL':>9} {'ROI':>7}")
+        print("  " + "-"*52)
+        for hour in sorted(hourly):
+            h = hourly[hour]
+            total  = h["wins"] + h["losses"]
+            winpct = 100 * h["wins"] / total if total else 0
+            roi    = 100 * h["pnl"] / h["wagered"] if h["wagered"] else 0
+            am_pm  = f"{hour % 12 or 12}{'am' if hour < 12 else 'pm'}"
+            bar    = "█" * int(winpct / 10)
+            flag   = " ⭐" if winpct >= 80 and total >= 5 else ("  ⚠️" if winpct < 50 and total >= 5 else "")
+            print(f"  {am_pm:<8} {total:>6} {h['wins']:>4} {h['losses']:>4} {winpct:>5.0f}% {h['pnl']:>+9.2f} {roi:>6.1f}%  {bar}{flag}")
+
+        # Best / worst hours
+        qualified = {h: v for h, v in hourly.items() if (v["wins"] + v["losses"]) >= 5}
+        if qualified:
+            best  = max(qualified, key=lambda h: qualified[h]["pnl"])
+            worst = min(qualified, key=lambda h: qualified[h]["pnl"])
+            best_h  = qualified[best]
+            worst_h = qualified[worst]
+            b_label = f"{best  % 12 or 12}{'am' if best  < 12 else 'pm'}"
+            w_label = f"{worst % 12 or 12}{'am' if worst < 12 else 'pm'}"
+            print()
+            print(f"  ⭐ Best hour:  {b_label} — ${best_h['pnl']:+.2f} PnL, "
+                  f"{100*best_h['wins']/(best_h['wins']+best_h['losses']):.0f}% win rate")
+            print(f"  ⚠️  Worst hour: {w_label} — ${worst_h['pnl']:+.2f} PnL, "
+                  f"{100*worst_h['wins']/(worst_h['wins']+worst_h['losses']):.0f}% win rate")
+
     print("="*60)
 
     if show_trades and results.trades:
