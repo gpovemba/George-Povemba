@@ -28,6 +28,7 @@ import os
 import time
 import random
 import itertools
+import csv
 from collections import deque
 import requests
 from datetime import datetime, timezone, timedelta
@@ -83,6 +84,91 @@ SESSION_ENTRIES  = 0
 SESSION_SKIPS    = 0
 SESSION_ATTEMPTS = 0
 SESSION_START    = time.time()
+
+# =============================================================================
+# MOON DEV - CSV TRADE LOG
+# =============================================================================
+LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "btc_buzzer_log.csv")
+_LOG_HEADERS = ["timestamp", "market_slug", "side", "entry_price", "shares", "outcome", "pnl_usd"]
+
+def _init_log():
+    if not os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "w", newline="") as f:
+            csv.writer(f).writerow(_LOG_HEADERS)
+
+def log_trade(market_slug, side, entry_price, shares, outcome=None):
+    """Write a trade row. Call with outcome=None on entry, update later with outcome."""
+    _init_log()
+    pnl = None
+    if outcome is not None and entry_price:
+        cost = entry_price * shares
+        pnl  = round(shares - cost, 4) if outcome.upper() == side.upper() else round(-cost, 4)
+    with open(LOG_FILE, "a", newline="") as f:
+        csv.writer(f).writerow([
+            datetime.now(ET).strftime("%Y-%m-%d %H:%M:%S"),
+            market_slug, side, entry_price, shares,
+            outcome if outcome else "pending", pnl if pnl is not None else "",
+        ])
+
+def update_trade_outcome(market_slug, side, entry_price, outcome):
+    """Re-open the CSV and fill in outcome + pnl for the matching pending row."""
+    if not os.path.exists(LOG_FILE):
+        return
+    rows = []
+    updated = False
+    with open(LOG_FILE, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if (not updated and row["market_slug"] == market_slug
+                    and row["side"] == side and row["outcome"] == "pending"):
+                shares = float(row["shares"])
+                cost   = float(row["entry_price"]) * shares
+                pnl    = round(shares - cost, 4) if outcome == side else round(-cost, 4)
+                row["outcome"] = outcome
+                row["pnl_usd"] = pnl
+                updated = True
+            rows.append(row)
+    with open(LOG_FILE, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=_LOG_HEADERS)
+        w.writeheader()
+        w.writerows(rows)
+
+def _parse_outcome_from_data(data):
+    import json as _json
+    prices   = data.get("outcomePrices")
+    outcomes = data.get("outcomes")
+    if not prices or not outcomes:
+        return None
+    prices   = _json.loads(prices)   if isinstance(prices,   str) else prices
+    outcomes = _json.loads(outcomes) if isinstance(outcomes, str) else outcomes
+    for outcome, price in zip(outcomes, prices):
+        if float(price) == 1.0:
+            return outcome
+    return None
+
+def resolve_market_outcome(market_id):
+    """Fetch resolved outcome by market ID. Returns 'Up','Down', or None."""
+    try:
+        resp = requests.get(f"https://gamma-api.polymarket.com/markets/{market_id}", timeout=10)
+        if resp.status_code != 200:
+            return None
+        return _parse_outcome_from_data(resp.json())
+    except Exception:
+        return None
+
+def resolve_market_outcome_by_slug(slug):
+    """Fetch resolved outcome by market slug. Returns 'Up','Down', or None."""
+    try:
+        resp = requests.get(
+            "https://gamma-api.polymarket.com/markets",
+            params={"slug": slug, "closed": "true"},
+            timeout=10,
+        )
+        if resp.status_code != 200 or not resp.json():
+            return None
+        return _parse_outcome_from_data(resp.json()[0])
+    except Exception:
+        return None
 
 # =============================================================================
 # MOON DEV - FUN ZONE: HYPE MESSAGES, EVENT LOG, SPINNERS
@@ -143,6 +229,14 @@ def get_token_id(market_id):
         if resp.status_code != 200:
             return []
         data = resp.json()
+        # API returns clobTokenIds as a JSON string e.g. '["id1","id2"]'
+        import json as _json
+        raw = data.get('clobTokenIds')
+        if raw:
+            tokens = _json.loads(raw) if isinstance(raw, str) else raw
+            if len(tokens) >= 2:
+                return [market_id, tokens[0], tokens[1]]
+        # fallback: old 'tokens' array shape
         tokens = data.get('tokens', [])
         if len(tokens) < 2:
             return []
@@ -214,6 +308,8 @@ def get_order_status_for_id(order_id):
     """
     if not order_id or order_id == 'timeout-assumed-live':
         return None
+    if str(order_id).startswith('dry-run-'):
+        return {'status': 'LIVE', 'size_matched': 0.0, 'original_size': 5.0, 'price': 0.0, 'is_filled': False}
 
     client = _build_client()
     for attempt in range(3):
@@ -296,6 +392,9 @@ def place_limit_order(token_id, side, price, size, neg_risk=False):
 
 def cancel_token_orders_acct(token_id):
     """Cancel all orders for a token on the configured account."""
+    if DRY_RUN:
+        log_event(f"[DRY RUN] Would cancel orders on {str(token_id)[:10]}...", "magenta")
+        return True
     client = _build_client()
     try:
         client.cancel_market_orders(asset_id=str(token_id))
@@ -631,6 +730,37 @@ def main():
     log_event(f"👤 Account: {'OG' if ACCOUNT_SUFFIX == '' else ACCOUNT_SUFFIX}", "cyan")
     log_event(f"💰 Bet size: ${BET_SIZE_USD:.2f}", "green")
 
+    # Resolve any pending outcomes from previous sessions
+    _init_log()
+    try:
+        import csv as _csv
+        _pending_slugs = set()
+        with open(LOG_FILE, "r", newline="") as _f:
+            for _row in _csv.DictReader(_f):
+                if _row["outcome"] == "pending":
+                    _pending_slugs.add(_row["market_slug"])
+        for _slug in _pending_slugs:
+            _outcome = resolve_market_outcome_by_slug(_slug)
+            if _outcome:
+                _rows2 = []
+                with open(LOG_FILE, "r", newline="") as _f:
+                    _reader = _csv.DictReader(_f)
+                    for _r in _reader:
+                        if _r["market_slug"] == _slug and _r["outcome"] == "pending":
+                            _shares = float(_r["shares"])
+                            _cost   = float(_r["entry_price"]) * _shares
+                            _won    = _outcome.upper() == _r["side"].upper()
+                            _r["outcome"] = _outcome
+                            _r["pnl_usd"] = round(_shares - _cost, 4) if _won else round(-_cost, 4)
+                        _rows2.append(_r)
+                with open(LOG_FILE, "w", newline="") as _f:
+                    _w = _csv.DictWriter(_f, fieldnames=_LOG_HEADERS)
+                    _w.writeheader()
+                    _w.writerows(_rows2)
+                log_event(f"📊 Resolved old pending: {_slug[-10:]} → {_outcome}", "cyan")
+    except Exception:
+        pass
+
     def reset_market_state():
         """Called when the market rolls over to the next 5-min window."""
         state['market_ts']         = None
@@ -659,6 +789,17 @@ def main():
         if market_ts != state['market_ts']:
             if state['last_order_id'] is not None and state['favored_token_id'] and not state['entered']:
                 cancel_token_orders_acct(state['favored_token_id'])
+            # Resolve outcome for the market that just closed
+            if state['market_info'] and state['favored_side'] and state['last_order_id']:
+                outcome = resolve_market_outcome(state['market_info']['market_id'])
+                if outcome:
+                    update_trade_outcome(
+                        state['market_info']['slug'],
+                        state['favored_side'],
+                        state['last_order_price'] or state['open_order_price'],
+                        outcome,
+                    )
+                    log_event(f"📊 Resolved {state['market_info']['slug'][-10:]}: {outcome}", "cyan")
             reset_market_state()
             state['market_ts'] = market_ts
             up_book   = None
@@ -831,6 +972,11 @@ def main():
                                     state['last_order_id']    = oid
                                     state['last_order_price'] = target_price
                                     state['open_order_price'] = target_price
+                                    log_trade(
+                                        state['market_info']['slug'],
+                                        state['favored_side'],
+                                        target_price, shares,
+                                    )
 
         # — Past the stop threshold — kill any stale order ————————————
         if (
