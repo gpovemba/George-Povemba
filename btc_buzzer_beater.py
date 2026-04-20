@@ -893,6 +893,8 @@ def main():
 
                         if best_ask > MAX_ASK_CAP:
                             log_event(f"⚠️ Ask {best_ask:.3f} > cap - not chasing", "yellow")
+                        elif best_ask < FAVORED_THRESHOLD:
+                            log_event(f"🛑 Ask {best_ask:.3f} fell below threshold - standing down", "red")
                         else:
                             target_price = round(best_ask, 4)
                             if abs(existing_price - target_price) <= 0.01:
@@ -957,6 +959,8 @@ def main():
                         log_event("⚠️ No order book for favored side", "yellow")
                     elif best_ask > MAX_ASK_CAP:
                         log_event(f"⚠️ Ask {best_ask:.3f} > cap {MAX_ASK_CAP:.2f} - skip", "yellow")
+                    elif best_ask < FAVORED_THRESHOLD:
+                        log_event(f"🛑 Ask {best_ask:.3f} fell below threshold - standing down", "red")
                     else:
                         target_price = round(best_ask, 4)
                         shares       = calculate_shares(BET_SIZE_USD, target_price)
@@ -977,6 +981,11 @@ def main():
                                         state['favored_side'],
                                         target_price, shares,
                                     )
+                                    if DRY_RUN:
+                                        state['entered']          = True
+                                        state['entry_fill_price'] = target_price
+                                        SESSION_ENTRIES += 1
+                                        log_event(f"[DRY RUN] Simulated fill @ ${target_price:.4f}", "magenta")
 
         # — Past the stop threshold — kill any stale order ————————————
         if (
