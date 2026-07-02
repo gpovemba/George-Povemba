@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Session — 30 Day Trading Discipline Challenge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#FFFFFF;
+  --surface:#F3F4F7;
+  --line:#E6E8EC;
+  --ink:#14161A;
+  --muted:#71767E;
+  --muted-2:#9AA0A8;
+  --blue:#2454FF;
+  --blue-dark:#1B3FCC;
+  --blue-soft:#EAEFFF;
+  --green:#12876B;
+  --green-dark:#0E6D56;
+  --green-soft:#E4F5EF;
+  --red:#D64545;
+  --red-dark:#B93636;
+  --red-soft:#FCEAEA;
+  --amber:#E6A417;
+  --radius:6px;
+  --pill:999px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  font-family:'Inter', system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+}
+.app{max-width:880px; margin:0 auto; padding:0 0 100px;}
+
+.topbar{background:var(--ink); display:flex; align-items:center; justify-content:space-between; padding:16px 24px; margin-bottom:28px;}
+.topbar .brand-mark{display:flex; align-items:center; gap:10px;}
+.topbar .brand-mark h1{font-family:'Archivo Black', sans-serif; font-size:18px; color:#fff; letter-spacing:-0.01em;}
+.topbar-actions{display:flex; gap:8px;}
+.topbar-actions .pill-btn{font-family:'Inter', sans-serif; font-size:13px; font-weight:700; padding:9px 18px; border-radius:var(--pill); cursor:pointer; border:1.5px solid rgba(255,255,255,0.3); color:#fff; background:transparent;}
+.topbar-actions .pill-btn.solid{background:var(--blue); border-color:var(--blue);}
+
+.header{display:none;}
+
+.tabs{display:flex; gap:8px; margin:0 24px 28px; background:var(--surface); padding:5px; border-radius:var(--pill);}
+.tab{flex:1; text-align:center; padding:11px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; border-radius:var(--pill); letter-spacing:0.01em;}
+.tab.active{background:var(--ink); color:#fff;}
+.tab:hover:not(.active){color:var(--ink);}
+
+.panel{display:none; padding:0 24px;}
+.panel.active{display:block;}
+
+.card{background:var(--bg); border:2px solid var(--ink); border-radius:var(--radius); padding:24px; margin-bottom:16px;}
+.card h2{font-family:'Space Grotesk', sans-serif; font-size:18px; font-weight:700; margin-bottom:16px;}
+
+label{display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted); margin-bottom:6px; margin-top:16px;}
+label:first-child{margin-top:0;}
+input[type=text], input[type=number], input[type=date], select, textarea{
+  width:100%; padding:12px 13px; border:2px solid var(--line); background:var(--surface);
+  border-radius:6px; font-family:'Inter', sans-serif; font-size:14px; color:var(--ink); font-weight:500;
+}
+input:focus, select:focus, textarea:focus{outline:none; border-color:var(--blue); background:var(--bg);}
+textarea{min-height:64px; resize:vertical;}
+.row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+
+.rule-grid{display:flex; flex-direction:column; gap:8px; margin-top:8px;}
+.rule-row{display:flex; align-items:center; gap:12px; border:2px solid var(--line); border-radius:6px; padding:10px 14px;}
+.rule-row .check{flex-shrink:0; width:22px; height:22px; border-radius:50%; background:var(--green); display:flex; align-items:center; justify-content:center;}
+.rule-row .check svg{width:12px; height:12px;}
+.rule-row .tag{flex-shrink:0; font-family:'IBM Plex Mono', monospace; font-size:9px; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; color:#fff; padding:5px 8px; border-radius:4px; text-align:center; width:78px;}
+.rule-row.hard .tag{background:var(--blue);}
+.rule-row.honor .tag{background:var(--ink);}
+.rule-row span.label{font-size:13px; font-weight:600; color:var(--ink);}
+
+.btn{display:inline-block; background:var(--blue); color:#fff; border:none; padding:16px 30px; border-radius:var(--pill); font-weight:700; font-size:15px; cursor:pointer; margin-top:20px; font-family:'Space Grotesk', sans-serif;}
+.btn:hover{background:var(--blue-dark);}
+.btn.green{background:var(--green);}
+.btn.green:hover{background:var(--green-dark);}
+.btn.secondary{background:var(--ink); color:#fff;}
+.btn.small{padding:10px 20px; font-size:12px; margin-top:0;}
+
+.stat-strip{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;}
+.stat{border-radius:var(--radius); padding:16px 10px; text-align:center; color:#fff;}
+.stat:nth-child(1){background:var(--ink);}
+.stat:nth-child(2){background:var(--blue);}
+.stat:nth-child(3){background:var(--green);}
+.stat:nth-child(3).failed{background:var(--red);}
+.stat .num{font-family:'Space Grotesk', sans-serif; font-size:26px; font-weight:700;}
+.stat .lbl{font-family:'IBM Plex Mono', monospace; font-size:9px; text-transform:uppercase; letter-spacing:0.04em; opacity:0.8; margin-top:2px;}
+
+.calendar{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+.dow{font-family:'IBM Plex Mono', monospace; font-size:10px; text-align:center; color:var(--muted-2); text-transform:uppercase; padding-bottom:6px; font-weight:700;}
+.day{aspect-ratio:1; border:2px solid var(--line); border-radius:6px; padding:6px; position:relative; cursor:pointer; background:var(--surface); display:flex; flex-direction:column; justify-content:space-between;}
+.day.empty{border:none; background:transparent; cursor:default;}
+.day .dnum{font-family:'Space Grotesk', sans-serif; font-size:12px; font-weight:700; color:var(--muted);}
+.day.pass{background:var(--green); border-color:var(--green);}
+.day.pass .dnum{color:#fff;}
+.day.fail{background:var(--red); border-color:var(--red);}
+.day.fail .dnum{color:#fff;}
+.day.today{border-color:var(--blue); border-width:3px;}
+.day.future{opacity:0.4; cursor:default;}
+.day-arc{width:14px; height:14px; align-self:flex-end;}
+
+.legend{display:flex; gap:16px; margin-top:14px; font-size:12px; color:var(--muted); font-weight:600;}
+.legend span{display:inline-flex; align-items:center; gap:6px;}
+.dot{width:10px; height:10px; border-radius:3px;}
+
+.entry{border:2px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:10px;}
+.entry-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.entry-day{font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:700;}
+.badge{font-size:11px; font-weight:700; padding:4px 10px; border-radius:5px; text-transform:uppercase; color:#fff;}
+.badge.pass{background:var(--green);}
+.badge.fail{background:var(--red);}
+.entry-meta{display:flex; gap:14px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--muted); margin-bottom:6px; flex-wrap:wrap; font-weight:600;}
+.entry-notes{font-size:13px; color:var(--ink); line-height:1.5;}
+
+.honor-checks{display:flex; flex-direction:column; gap:10px; margin-top:16px; padding-top:16px; border-top:2px solid var(--line);}
+.honor-checks label{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; margin:0; color:var(--ink); cursor:pointer;}
+.honor-checks input[type=checkbox]{width:18px; height:18px; accent-color:var(--blue);}
+
+.empty-state{text-align:center; padding:40px 20px; color:var(--muted); font-weight:600;}
+
+.cert{background:var(--ink); border-radius:12px; padding:48px; text-align:center; color:#fff;}
+.cert .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); font-weight:700;}
+.cert h2{font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:700; margin:14px 0 6px;}
+.cert .name{font-family:'Space Grotesk', sans-serif; font-size:20px; font-weight:700; color:#fff; margin:18px 0; padding:10px 20px; background:var(--blue); display:inline-block; border-radius:6px;}
+.cert .detail{font-family:'IBM Plex Mono', monospace; font-size:12px; color:#B8BDC7; margin-top:4px;}
+.cert-arc{margin:20px auto;}
+.attest{font-size:11px; color:#8A909B; margin-top:22px; max-width:400px; margin-left:auto; margin-right:auto;}
+
+.locked{text-align:center; padding:60px 20px; color:var(--muted); font-weight:600;}
+.locked .arc-mark{margin:0 auto 16px;}
+
+.hero{margin-bottom:16px; padding:24px 20px; border-radius:16px; background-color:var(--surface); background-image:radial-gradient(circle, #D5D9E0 1px, transparent 1px); background-size:16px 16px;}
+.hero .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--blue);}
+.hero h1{font-family:'Archivo Black', sans-serif; font-size:38px; letter-spacing:-0.01em; margin:10px 0 14px; line-height:1.05; text-transform:uppercase;}
+.hero p.lede{font-size:15px; color:var(--muted); line-height:1.55; max-width:560px; font-weight:500;}
+
+.steps{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:22px 0;}
+.step{border-radius:14px; padding:18px 16px; color:#fff;}
+.step:nth-child(1){background:var(--blue);}
+.step:nth-child(2){background:var(--blue);}
+.step:nth-child(3){background:var(--blue);}
+.step .stepnum{font-family:'Archivo Black', sans-serif; font-size:24px; opacity:0.45;}
+.step h3{font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:700; margin:8px 0 4px;}
+.step p{font-size:12px; line-height:1.4; opacity:0.9;}
+
+.possibility-row{display:flex; gap:10px; margin:18px 0 26px; flex-wrap:wrap;}
+.possibility{border-radius:14px; padding:16px 18px; font-size:12px; font-weight:700; color:var(--ink); flex:1; min-width:150px; background:var(--surface);}
+.possibility .k{font-family:'Archivo Black', sans-serif; font-size:32px; display:block; color:var(--blue); line-height:1;}
+
+.preview-wrap{position:relative;}
+.preview-wrap .calendar{opacity:0.35; pointer-events:none; filter:grayscale(40%);}
+.preview-overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(255,255,255,0.85) 40%);}
+.preview-overlay p{font-weight:700; font-size:14px; color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand-mark">
+      <svg width="26" height="26" viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="4"/>
+        <path id="headerArc" d="" fill="none" stroke="var(--blue)" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="28" cy="28" r="3" fill="var(--blue)"/>
+      </svg>
+      <h1>THE SESSION</h1>
+    </div>
+    <div class="topbar-actions">
+      <span id="sessionSub" style="font-family:'IBM Plex Mono', monospace; font-size:11px; color:rgba(255,255,255,0.6); align-self:center; margin-right:4px;">30-Day Challenge</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="setup">Setup</div>
+    <div class="tab" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="journal">Journal</div>
+    <div class="tab" data-tab="certificate">Certificate</div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="panel active" id="panel-setup">
+
+    <div class="hero">
+      <div class="eyebrow">30-Day Discipline Challenge</div>
+      <h1>You already know your system. This is where you prove you can follow it.</h1>
+      <p class="lede">Most trading losses aren't a bad strategy — they're a broken rule. One extra trade, one oversized position, one revenge entry after a red day. The Session locks in your own rules for 30 straight days and keeps an honest record of whether you followed them.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step"><span class="stepnum">01</span><h3>Set your rules</h3><p>Pick your session window, size limit, and the setup you'll trade. You define the line — the app just checks whether you stayed on your side of it.</p></div>
+      <div class="step"><span class="stepnum">02</span><h3>Log every day</h3><p>One entry per trading day. Timing and size are checked automatically. Setup match and emotional discipline, you call honestly.</p></div>
+      <div class="step"><span class="stepnum">03</span><h3>One break ends it</h3><p>No partial credit. Break a rule and the run is over — restart when you're ready. Finish clean and you earn a shareable certificate.</p></div>
+    </div>
+
+    <div class="possibility-row">
+      <div class="possibility"><span class="k">30</span>days of proof you followed your own system</div>
+      <div class="possibility"><span class="k">1</span>rule broken ends the run — no gray area</div>
+      <div class="possibility"><span class="k">0</span>cost — this is a record, not a wager</div>
+    </div>
+
+    <div id="setupFormWrap">
+    <div class="card">
+      <h2>Start your challenge</h2>
+
+      <label>Your name</label>
+      <input type="text" id="traderName" placeholder="e.g. Alex Rivera">
+
+      <div class="row">
+        <div>
+          <label>Session window</label>
+          <select id="sessionWindow">
+            <option value="9:30-11:00|NY AM">NY AM — 9:30–11:00 EST</option>
+            <option value="7:00-9:00|London">London — 7:00–9:00 GMT</option>
+            <option value="20:00-22:00|Tokyo">Tokyo — 20:00–22:00 EST</option>
+            <option value="custom|Custom">Custom window</option>
+          </select>
+        </div>
+        <div>
+          <label>Start date</label>
+          <input type="date" id="startDate">
+        </div>
+      </div>
+
+      <label>Max position size (%)</label>
+      <input type="number" id="maxSize" value="1" min="0.1" step="0.1" style="max-width:160px;">
+
+      <label>Rules</label>
+      <div class="rule-grid">
+        <div class="rule-row hard"><span class="check"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tag">Enforced</span><span class="label">One trade / session window</span></div>
+        <div class="rule-row hard"><span class="check"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tag">Enforced</span><span class="label">Size under your max %</span></div>
+        <div class="rule-row honor"><span class="check"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tag">Self-graded</span><span class="label">Matches backtested setup</span></div>
+        <div class="rule-row honor"><span class="check"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tag">Self-graded</span><span class="label">No revenge trade</span></div>
+      </div>
+
+      <button class="btn" onclick="startChallenge()">Begin the challenge</button>
+    </div>
+    </div>
+
+    <div id="setupActiveNotice" class="card" style="display:none;">
+      <h2 id="activeNoticeTitle">Challenge already active</h2>
+      <p style="font-size:13px; color:var(--muted); font-weight:600; margin-bottom:18px;">You can't start a new one while this run is in progress — it would overwrite your current entries. Manage or restart it from the Dashboard.</p>
+      <button class="btn secondary small" onclick="goToDashboard()">Go to Dashboard</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="panel" id="panel-dashboard">
+    <div id="dashboardLocked" class="card">
+      <h2>Calendar</h2>
+      <div class="preview-wrap">
+        <div class="calendar" id="previewCalendarGrid"></div>
+        <div class="preview-overlay">
+          <p>Your 30-day calendar fills in once you start</p>
+          <button class="btn small" onclick="goToSetup()">Begin challenge</button>
+        </div>
+      </div>
+    </div>
+    <div id="dashboardContent" style="display:none;">
+      <div class="stat-strip">
+        <div class="stat"><div class="num" id="statDay">0/30</div><div class="lbl">Day</div></div>
+        <div class="stat"><div class="num" id="statStreak">0</div><div class="lbl">Streak</div></div>
+        <div class="stat" id="statStatusBox"><div class="num" id="statStatus">Active</div><div class="lbl">Status</div></div>
+      </div>
+      <div class="card">
+        <h2>Calendar</h2>
+        <div class="calendar" id="calendarGrid"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--green)"></span>Clean</span>
+          <span><span class="dot" style="background:var(--red)"></span>Broken</span>
+          <span><span class="dot" style="background:var(--surface); border:1px solid var(--line)"></span>Open</span>
+        </div>
+        <button class="btn small" id="restartBtn" style="display:none; margin-top:16px;" onclick="restartChallenge()">Restart challenge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="panel" id="panel-journal">
+    <div id="journalLocked" class="locked">
+      <p>Set up your challenge first.</p>
+    </div>
+    <div id="journalContent" style="display:none;">
+      <div class="card" id="logEntryCard">
+        <h2 id="logDayTitle">Log today</h2>
+
+        <div class="row">
+          <div>
+            <label>Trade taken?</label>
+            <select id="tradeTaken">
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div>
+            <label>Entry time</label>
+            <input type="text" id="entryTime" placeholder="10:14">
+          </div>
+        </div>
+        <div class="row3">
+          <div>
+            <label>Instrument</label>
+            <input type="text" id="instrument" placeholder="ES, NQ...">
+          </div>
+          <div>
+            <label>Size (%)</label>
+            <input type="number" id="posSize" step="0.1" placeholder="0.8">
+          </div>
+          <div>
+            <label>Result</label>
+            <select id="tradeResult">
+              <option value="win">Win</option>
+              <option value="loss">Loss</option>
+              <option value="be">Breakeven</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Notes</label>
+        <textarea id="tradeNotes" placeholder="Setup, what you saw..."></textarea>
+
+        <div class="honor-checks">
+          <label><input type="checkbox" id="honorMatch" checked> Matched my backtested setup</label>
+          <label><input type="checkbox" id="honorRevenge" checked> Not a revenge or emotional trade</label>
+        </div>
+
+        <button class="btn green" onclick="logDay()">Save entry</button>
+      </div>
+
+      <div id="entryList"></div>
+    </div>
+  </div>
+
+  <!-- CERTIFICATE -->
+  <div class="panel" id="panel-certificate">
+    <div id="certLocked" class="locked">
+      <p>Complete 30 clean days to unlock.</p>
+      <p id="certProgress" style="margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:12px;"></p>
+    </div>
+    <div id="certContent" style="display:none;">
+      <div class="cert">
+        <svg class="cert-arc" width="56" height="56" viewBox="0 0 56 56">
+          <circle cx="28" cy="28" r="24" fill="none" stroke="#2A2E38" stroke-width="4"/>
+          <path d="M28,4 A24,24 0 0 1 46,38" fill="none" stroke="var(--green)" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="28" cy="28" r="3" fill="var(--green)"/>
+        </svg>
+        <div class="eyebrow">Self-Attested Completion</div>
+        <h2>The Session — 30 Days</h2>
+        <div class="name" id="certName">—</div>
+        <div class="detail" id="certDetail">—</div>
+        <div class="detail" id="certRules">—</div>
+        <p class="attest">Timing and size verified from logged entries. Setup match and discipline calls are self-reported.</p>
+      </div>
+      <button class="btn secondary" onclick="downloadCert()" style="margin-top:14px;">Save as image</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let state = { setup: null, entries: {} };
+let logEntryCardTemplate = null;
+
+function arcPath(cx, cy, r, startFrac, endFrac){
+  const a1 = (startFrac*360 - 90) * Math.PI/180;
+  const a2 = (endFrac*360 - 90) * Math.PI/180;
+  const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+  const x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+  const large = (endFrac-startFrac) > 0.5 ? 1 : 0;
+  return `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`;
+}
+document.getElementById('headerArc').setAttribute('d', arcPath(28,28,24,0,0.42));
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='setup') renderSetup();
+    if(t.dataset.tab==='dashboard') renderDashboard();
+    if(t.dataset.tab==='journal') renderJournal();
+    if(t.dataset.tab==='certificate') renderCert();
+  };
+});
+
+async function loadState(){
+  try{
+    const raw = localStorage.getItem('challenge-state');
+    if(raw) state = JSON.parse(raw);
+  }catch(e){ /* no saved state yet */ }
+  if(state.setup){
+    document.getElementById('panel-setup').classList.remove('active');
+    document.querySelectorAll('.tab')[0].classList.remove('active');
+    document.querySelectorAll('.tab')[1].classList.add('active');
+    document.getElementById('panel-dashboard').classList.add('active');
+    document.getElementById('sessionSub').textContent = state.setup.sessionLabel + ' · Day ' + currentDay() + ' of 30';
+    renderDashboard();
+  }
+}
+async function saveState(){
+  try{ localStorage.setItem('challenge-state', JSON.stringify(state)); }
+  catch(e){ console.error('save failed', e); }
+}
+
+function startChallenge(){
+  const name = document.getElementById('traderName').value.trim() || 'Trader';
+  const sw = document.getElementById('sessionWindow').value.split('|');
+  const start = document.getElementById('startDate').value || new Date().toISOString().slice(0,10);
+  const maxSize = parseFloat(document.getElementById('maxSize').value) || 1;
+  state.setup = { name, sessionLabel: sw[1], sessionWindow: sw[0], startDate: start, maxSize };
+  state.entries = {};
+  saveState();
+  document.getElementById('sessionSub').textContent = sw[1] + ' · Day 1 of 30';
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.getElementById('panel-dashboard').classList.add('active');
+  renderDashboard();
+}
+
+function currentDay(){
+  if(!state.setup) return 0;
+  const start = new Date(state.setup.startDate);
+  const today = new Date();
+  const diff = Math.floor((today - start)/(1000*60*60*24)) + 1;
+  return Math.min(Math.max(diff,1),30);
+}
+
+function renderPreviewCalendar(){
+  const grid = document.getElementById('previewCalendarGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  ['S','M','T','W','T','F','S'].forEach(d=>{
+    const el = document.createElement('div');
+    el.className='dow'; el.textContent=d; grid.appendChild(el);
+  });
+  const startDow = new Date().getDay();
+  for(let i=0;i<startDow;i++){
+    const el = document.createElement('div'); el.className='day empty'; grid.appendChild(el);
+  }
+  for(let d=1; d<=30; d++){
+    const el = document.createElement('div');
+    el.className='day future';
+    el.innerHTML = `<span class="dnum">${d}</span>`;
+    grid.appendChild(el);
+  }
+}
+
+function goToDashboard(){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab')[1].classList.add('active');
+  document.getElementById('panel-dashboard').classList.add('active');
+  renderDashboard();
+}
+
+function renderSetup(){
+  const formWrap = document.getElementById('setupFormWrap');
+  const notice = document.getElementById('setupActiveNotice');
+  if(state.setup){
+    formWrap.style.display = 'none';
+    notice.style.display = 'block';
+    const failDay = findFailDay();
+    document.getElementById('activeNoticeTitle').textContent = failDay ? `Challenge failed on day ${failDay}` : 'Challenge already active';
+  }else{
+    formWrap.style.display = 'block';
+    notice.style.display = 'none';
+  }
+}
+
+function goToSetup(){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab')[0].classList.add('active');
+  document.getElementById('panel-setup').classList.add('active');
+  renderSetup();
+}
+
+function findFailDay(){
+  const days = Object.keys(state.entries).map(Number).sort((a,b)=>a-b);
+  for(const d of days){
+    if(!isDayClean(state.entries[d])) return d;
+  }
+  return null;
+}
+
+function renderDashboard(){
+  if(!state.setup){
+    document.getElementById('dashboardLocked').style.display='block';
+    document.getElementById('dashboardContent').style.display='none';
+    renderPreviewCalendar();
+    return;
+  }
+  document.getElementById('dashboardLocked').style.display='none';
+  document.getElementById('dashboardContent').style.display='block';
+
+  const dayNum = currentDay();
+  const failDay = findFailDay();
+  const streak = failDay ? failDay - 1 : Object.keys(state.entries).filter(d=>state.entries[d] && isDayClean(state.entries[d])).length;
+
+  document.getElementById('statDay').textContent = (failDay || dayNum) + '/30';
+  document.getElementById('statStreak').textContent = streak;
+  const statusBox = document.getElementById('statStatusBox');
+  const statusEl = document.getElementById('statStatus');
+  if(failDay){
+    statusEl.textContent = 'Failed';
+    statusBox.classList.add('failed');
+    document.getElementById('restartBtn').style.display = 'inline-block';
+  }else{
+    statusEl.textContent = 'Active';
+    statusBox.classList.remove('failed');
+    document.getElementById('restartBtn').style.display = 'none';
+  }
+
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+  ['S','M','T','W','T','F','S'].forEach(d=>{
+    const el = document.createElement('div');
+    el.className='dow'; el.textContent=d; grid.appendChild(el);
+  });
+  const startDow = new Date(state.setup.startDate).getDay();
+  for(let i=0;i<startDow;i++){
+    const el = document.createElement('div'); el.className='day empty'; grid.appendChild(el);
+  }
+  for(let d=1; d<=30; d++){
+    const el = document.createElement('div');
+    const e = state.entries[d];
+    let cls = 'day';
+    const lockedOut = failDay && d > failDay;
+    if(lockedOut || d > dayNum) cls += ' future';
+    else if(d === dayNum && !failDay) cls += ' today';
+    if(e) cls += isDayClean(e) ? ' pass' : ' fail';
+    el.className = cls;
+    el.innerHTML = `<span class="dnum">${d}</span>` + (e ? arcSvg(e) : '');
+    el.onclick = ()=>{ if(d<=dayNum && !lockedOut){ jumpToJournalDay(d); } };
+    grid.appendChild(el);
+  }
+  document.getElementById('sessionSub').textContent = state.setup.sessionLabel + (failDay ? ' · Failed on day ' + failDay : ' · Day ' + dayNum + ' of 30');
+}
+
+function restartChallenge(){
+  state.setup = null;
+  state.entries = {};
+  saveState();
+  goToSetup();
+  renderPreviewCalendar();
+  renderSetup();
+}
+
+function arcSvg(e){
+  const clean = isDayClean(e);
+  return `<svg class="day-arc" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="#fff" stroke-width="2" opacity="0.85"/></svg>`;
+}
+
+function isDayClean(e){
+  if(e.noTrade) return true;
+  return e.inWindowOk && e.sizeOk && e.honorMatch && e.honorRevenge;
+}
+
+let journalDay = null;
+function jumpToJournalDay(d){
+  journalDay = d;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab')[2].classList.add('active');
+  document.getElementById('panel-journal').classList.add('active');
+  renderJournal();
+}
+
+function renderJournal(){
+  if(!state.setup){
+    document.getElementById('journalLocked').style.display='block';
+    document.getElementById('journalContent').style.display='none';
+    return;
+  }
+  document.getElementById('journalLocked').style.display='none';
+  document.getElementById('journalContent').style.display='block';
+
+  const failDay = findFailDay();
+  const logCard = document.getElementById('logEntryCard');
+  if(logEntryCardTemplate === null) logEntryCardTemplate = logCard.innerHTML;
+  if(failDay){
+    logCard.innerHTML = `<h2>Challenge failed on day ${failDay}</h2><p style="font-size:13px; color:var(--muted); font-weight:600;">Logging is locked. Restart from the Dashboard to begin a new 30-day run.</p>`;
+  }else{
+    logCard.innerHTML = logEntryCardTemplate;
+    const d = journalDay || currentDay();
+    journalDay = d;
+    document.getElementById('logDayTitle').textContent = `Log day ${d} of 30`;
+  }
+
+  const list = document.getElementById('entryList');
+  list.innerHTML='';
+  const days = Object.keys(state.entries).map(Number).sort((a,b)=>b-a);
+  if(days.length===0){
+    list.innerHTML = '<div class="empty-state">No entries yet.</div>';
+    return;
+  }
+  days.forEach(dnum=>{
+    const e = state.entries[dnum];
+    const clean = isDayClean(e);
+    const div = document.createElement('div');
+    div.className='entry';
+    div.innerHTML = `
+      <div class="entry-top">
+        <span class="entry-day">DAY ${dnum}</span>
+        <span class="badge ${clean?'pass':'fail'}">${clean?'Clean':'Violation'}</span>
+      </div>
+      ${e.noTrade ? '<div class="entry-meta">No trade taken</div>' : `
+      <div class="entry-meta">
+        <span>${e.instrument||'—'}</span>
+        <span>${e.entryTime||'—'} ${e.inWindowOk?'':'⚠ outside window'}</span>
+        <span>${e.posSize||'—'}% size ${e.sizeOk?'':'⚠ over max'}</span>
+        <span>${e.result}</span>
+      </div>`}
+      <div class="entry-notes">${e.notes||''}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function logDay(){
+  const d = journalDay || currentDay();
+  const taken = document.getElementById('tradeTaken').value === 'yes';
+  const entryTime = document.getElementById('entryTime').value.trim();
+  const [wStart, wEnd] = state.setup.sessionWindow.split('-');
+  let inWindowOk = true;
+  if(taken && wStart !== 'custom' && entryTime){
+    inWindowOk = timeInRange(entryTime, wStart, wEnd);
+  }
+  const posSize = parseFloat(document.getElementById('posSize').value) || 0;
+  const sizeOk = !taken || posSize <= state.setup.maxSize;
+
+  state.entries[d] = {
+    noTrade: !taken,
+    entryTime, instrument: document.getElementById('instrument').value.trim(),
+    posSize, result: document.getElementById('tradeResult').value,
+    notes: document.getElementById('tradeNotes').value.trim(),
+    inWindowOk, sizeOk,
+    honorMatch: document.getElementById('honorMatch').checked,
+    honorRevenge: document.getElementById('honorRevenge').checked
+  };
+  saveState();
+  renderJournal();
+  renderDashboard();
+}
+
+function timeInRange(t, start, end){
+  const toMin = s => { const [h,m] = s.split(':').map(Number); return h*60+(m||0); };
+  try{
+    const tm = toMin(t.replace(/[^0-9:]/g,''));
+    return tm >= toMin(start) && tm <= toMin(end);
+  }catch(e){ return true; }
+}
+
+function renderCert(){
+  if(!state.setup){ document.getElementById('certLocked').style.display='block'; document.getElementById('certContent').style.display='none'; return; }
+  const dayNum = currentDay();
+  let cleanStreak = 0, broken=false;
+  for(let d=1; d<=30; d++){
+    const e = state.entries[d];
+    if(!e){ broken = true; continue; }
+    if(isDayClean(e) && !broken) cleanStreak++; else broken = true;
+  }
+  const complete = cleanStreak >= 30;
+  if(!complete){
+    document.getElementById('certLocked').style.display='block';
+    document.getElementById('certContent').style.display='none';
+    document.getElementById('certProgress').textContent = `${cleanStreak} of 30 clean days so far.`;
+    return;
+  }
+  document.getElementById('certLocked').style.display='none';
+  document.getElementById('certContent').style.display='block';
+  document.getElementById('certName').textContent = state.setup.name;
+  document.getElementById('certDetail').textContent = `${state.setup.sessionLabel} session · Completed ${new Date().toLocaleDateString()}`;
+  document.getElementById('certRules').textContent = `Max 1 trade/session · Position size ≤ ${state.setup.maxSize}%`;
+}
+
+function downloadCert(){
+  alert('In the full app this exports a PNG. For now, take a screenshot of the certificate above to share.');
+}
+
+loadState();
+renderPreviewCalendar();
+renderSetup();
+</script>
+</body>
+</html>
